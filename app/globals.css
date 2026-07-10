@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900 antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Bezpieczne marginesy pod notch / gesture bar na telefonach (PWA). */
+.safe-b {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-t {
+  padding-top: env(safe-area-inset-top);
+}
+
+@layer components {
+  /* --- Przyciski --- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+  }
+  .btn-primary {
+    @apply btn bg-brand-gradient text-white shadow-glow hover:brightness-110 active:brightness-95;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-ink-700 ring-1 ring-inset ring-ink-200 shadow-soft hover:bg-ink-50 hover:ring-ink-300;
+  }
+  .btn-ghost {
+    @apply btn text-ink-600 hover:bg-ink-100;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white shadow-soft hover:bg-red-700;
+  }
+
+  /* --- Pola formularzy --- */
+  .input {
+    @apply block w-full rounded-xl border-0 bg-white px-3.5 py-2.5 text-ink-900 shadow-soft ring-1 ring-inset ring-ink-200 placeholder:text-ink-400 focus:ring-2 focus:ring-brand-500 outline-none transition;
+  }
+  .label {
+    @apply block text-sm font-medium text-ink-700 mb-1.5;
+  }
+
+  /* --- Karty --- */
+  .card {
+    @apply rounded-2xl bg-white p-5 shadow-card ring-1 ring-ink-100;
+  }
+  .card-hover {
+    @apply card transition-all hover:-translate-y-0.5 hover:shadow-glow;
+  }
+
+  /* --- Znaczniki --- */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  /* --- Wybór (kafelki usług / slotów) --- */
+  .pick {
+    @apply w-full rounded-xl border p-3 text-left transition-all;
+  }
+  .pick-idle {
+    @apply border-ink-200 bg-white hover:border-brand-300 hover:shadow-soft;
+  }
+  .pick-active {
+    @apply border-brand-500 bg-brand-50 ring-1 ring-brand-500;
+  }
+
+  /* Nagłówek sekcji w gradiencie marki. */
+  .text-gradient {
+    @apply bg-brand-gradient bg-clip-text text-transparent;
+  }
+}
+
+/* Delikatny, spójny scrollbar dla poziomych list (dni/sloty). */
+.scroll-x {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scroll-x::-webkit-scrollbar {
+  height: 6px;
+}
+.scroll-x::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}

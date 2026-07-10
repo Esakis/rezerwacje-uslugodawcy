@@ -1,0 +1,31 @@
+{
+  "name": "BookEasy — rezerwacje i SMS",
+  "short_name": "BookEasy",
+  "description": "Kalendarz online i SMS-y przypominające o wizycie dla usługodawców.",
+  "lang": "pl",
+  "start_url": "/panel",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "categories": ["business", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Kalendarz", "url": "/panel/calendar" },
+    { "name": "Moje wizyty (klient)", "url": "/moje" }
+  ]
+}

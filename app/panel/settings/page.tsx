@@ -1,0 +1,70 @@
+import { requireProvider } from "@/lib/auth";
+import { getPlan, isUnlimited, smsLimitLabel } from "@/lib/plans";
+import { bookingUrl } from "@/lib/tokens";
+import { PlanPicker } from "./plan-picker";
+import { ProfileForm } from "./profile-form";
+
+export default async function SettingsPage() {
+  const provider = await requireProvider();
+  const plan = getPlan(provider.plan);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const link = bookingUrl(provider.slug);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Plan i ustawienia</h1>
+
+      {/* Link do strony rezerwacji */}
+      <div className="card">
+        <h2 className="mb-2 text-lg font-semibold">Twoja strona rezerwacji</h2>
+        <p className="text-sm text-slate-500">Udostępnij ten link klientom (bio na Instagramie, Google, wizytówka):</p>
+        <div className="mt-2 flex items-center gap-2">
+          <code className="flex-1 rounded bg-slate-100 px-3 py-2 text-sm">{link}</code>
+          <a href={link} target="_blank" rel="noreferrer" className="btn-secondary">Otwórz ↗</a>
+        </div>
+      </div>
+
+      {/* Zużycie SMS */}
+      <div className="card">
+        <h2 className="mb-2 text-lg font-semibold">Wykorzystanie SMS</h2>
+        <p className="text-sm text-ink-600">
+          {provider.smsUsed} / {smsLimitLabel(plan)} SMS w bieżącym okresie (plan {plan.name}).
+        </p>
+        {isUnlimited(plan) ? (
+          <p className="mt-2 text-sm text-emerald-600">Plan {plan.name}: SMS-y bez limitu ✨</p>
+        ) : (
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-ink-100">
+            <div
+              className="h-full bg-brand-gradient"
+              style={{ width: `${Math.min(100, (provider.smsUsed / plan.smsLimit) * 100)}%` }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Plany */}
+      <div className="card">
+        <h2 className="mb-4 text-lg font-semibold">Plan subskrypcji</h2>
+        <PlanPicker current={provider.plan} />
+        <p className="mt-3 text-xs text-slate-400">
+          Tryb demo: zmiana planu następuje od razu. W wersji produkcyjnej płatność obsługuje Stripe Billing.
+        </p>
+      </div>
+
+      {/* Profil */}
+      <div className="card">
+        <h2 className="mb-4 text-lg font-semibold">Dane i ustawienia SMS</h2>
+        <ProfileForm
+          name={provider.name}
+          phone={provider.phone}
+          slug={provider.slug}
+          smsSenderName={provider.smsSenderName}
+          secondReminder={provider.secondReminder}
+          customSenderAllowed={plan.customSender}
+          secondReminderAllowed={plan.secondReminder}
+          appUrl={appUrl}
+        />
+      </div>
+    </div>
+  );
+}
