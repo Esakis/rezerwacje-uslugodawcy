@@ -1,10 +1,17 @@
 import { requireProvider } from "@/lib/auth";
+import { gcalEnabled } from "@/lib/gcal";
 import { getPlan, isUnlimited, smsLimitLabel } from "@/lib/plans";
 import { bookingUrl } from "@/lib/tokens";
+import { disconnectGcal } from "./actions";
 import { PlanPicker } from "./plan-picker";
 import { ProfileForm } from "./profile-form";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ gcal?: string }>;
+}) {
+  const { gcal } = await searchParams;
   const provider = await requireProvider();
   const plan = getPlan(provider.plan);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -41,6 +48,43 @@ export default async function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Google Calendar */}
+      {gcalEnabled() && (
+        <div className="card">
+          <h2 className="mb-2 text-lg font-semibold">Google Calendar</h2>
+          {gcal === "ok" && (
+            <p className="mb-2 text-sm text-emerald-600">Połączono z Google Calendar ✓</p>
+          )}
+          {gcal && gcal !== "ok" && (
+            <p className="mb-2 text-sm text-red-600">
+              Nie udało się połączyć z Google Calendar. Spróbuj ponownie.
+            </p>
+          )}
+          {provider.gcalRefreshToken ? (
+            <>
+              <p className="text-sm text-ink-600">
+                Połączono z kontem <strong>{provider.gcalEmail ?? "Google"}</strong>. Nowe
+                rezerwacje trafiają do Twojego kalendarza Google, a zajęte terminy z Google
+                blokują rezerwacje online.
+              </p>
+              <form action={disconnectGcal} className="mt-3">
+                <button className="btn-secondary">Rozłącz</button>
+              </form>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-500">
+                Połącz swój kalendarz Google: wizyty z BookEasy pojawią się w Google, a Twoje
+                prywatne wydarzenia zablokują terminy rezerwacji online.
+              </p>
+              <a href="/api/auth/gcal/start" className="btn-secondary mt-3 inline-block">
+                Połącz z Google Calendar
+              </a>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Plany */}
       <div className="card">

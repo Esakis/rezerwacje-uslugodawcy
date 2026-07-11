@@ -6,6 +6,7 @@ import {
   warsawWeekday,
 } from "./time";
 import { parseWorkingHours } from "./workingHours";
+import { getGcalBusy } from "./gcal";
 
 export interface Slot {
   startAt: Date; // UTC
@@ -70,6 +71,8 @@ export async function computeSlots(
   const dayEnd = addMinutes(dayStart, 24 * 60);
 
   const busy = await loadBusy(providerId, dayStart, dayEnd, staffId ?? null);
+  // Zajętości z kalendarza Google właściciela — traktowane jak blokada całego salonu.
+  busy.push(...(await getGcalBusy(provider, dayStart, dayEnd)));
   const buffer = provider.bufferMin ?? 0;
   const step = provider.slotStepMin > 0 ? provider.slotStepMin : 15;
   const now = new Date();
@@ -143,5 +146,9 @@ export async function isSlotFree(
     }),
   ]);
 
-  return !appt && !block;
+  if (appt || block) return false;
+
+  // Kolizja z kalendarzem Google właściciela (jak blokada całego salonu).
+  const gcalBusy = await getGcalBusy(provider, bufStart, bufEnd);
+  return !gcalBusy.some((b) => bufStart < b.endAt && bufEnd > b.startAt);
 }

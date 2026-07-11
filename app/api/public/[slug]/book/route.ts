@@ -5,6 +5,7 @@ import { isSlotFree } from "@/lib/slots";
 import { addMinutes } from "@/lib/time";
 import { normalizePhone } from "@/lib/format";
 import { sendSms, confirmBody } from "@/lib/sms";
+import { syncAppointmentToGcal } from "@/lib/gcal";
 
 const schema = z.object({
   serviceId: z.string().min(1),
@@ -91,14 +92,18 @@ export async function POST(
     },
   });
 
-  // SMS potwierdzający od razu.
-  const sms = await sendSms({
-    providerId: provider.id,
-    appointmentId: appt.id,
-    type: "confirm",
-    to: phone,
-    body: confirmBody(provider.name, service.name, appt),
-  });
+  // SMS potwierdzający i wydarzenie w Google Calendar (best-effort) — niezależne
+  // efekty uboczne, uruchamiane równolegle, żeby nie sumować opóźnień.
+  const [sms] = await Promise.all([
+    sendSms({
+      providerId: provider.id,
+      appointmentId: appt.id,
+      type: "confirm",
+      to: phone,
+      body: confirmBody(provider.name, service.name, appt),
+    }),
+    syncAppointmentToGcal(appt.id),
+  ]);
   if (sms.ok) {
     await prisma.appointment.update({ where: { id: appt.id }, data: { confirmSent: true } });
   }

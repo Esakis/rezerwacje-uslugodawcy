@@ -67,3 +67,14 @@ export async function updateProfile(
   revalidatePath("/panel/settings");
   return { ok: true, message: "Zapisano ustawienia." };
 }
+
+// Odłączenie Google Calendar. Usuwa tylko token po naszej stronie —
+// wydarzenia utworzone wcześniej w Google zostają.
+export async function disconnectGcal(): Promise<void> {
+  const provider = await requireProvider();
+  await prisma.provider.update({
+    where: { id: provider.id },
+    data: { gcalRefreshToken: null, gcalEmail: null },
+  });
+  revalidatePath("/panel/settings");
+}

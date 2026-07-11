@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { syncAppointmentToGcal } from "@/lib/gcal";
 
 export type CancelResult = { ok: boolean; error?: string };
 
@@ -18,6 +19,9 @@ export async function cancelByToken(token: string): Promise<CancelResult> {
     where: { id: appt.id },
     data: { status: "cancelled" },
   });
+
+  // Usunięcie wydarzenia z Google Calendar usługodawcy (best-effort).
+  await syncAppointmentToGcal(appt.id);
 
   revalidatePath(`/cancel/${token}`);
   revalidatePath("/panel");

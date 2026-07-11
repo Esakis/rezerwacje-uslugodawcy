@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { normalizePhone } from "@/lib/format";
 import { sendRawSms } from "@/lib/sms";
 import { createClientSession, destroyClientSession, getClientPhone } from "@/lib/client-auth";
+import { syncAppointmentToGcal } from "@/lib/gcal";
 
 export type LoginState = {
   step: "phone" | "code";
@@ -94,5 +95,7 @@ export async function cancelMyAppointment(appointmentId: string): Promise<void> 
   if (!appt) return;
 
   await prisma.appointment.update({ where: { id: appt.id }, data: { status: "cancelled" } });
+  // Usunięcie wydarzenia z Google Calendar usługodawcy (best-effort).
+  await syncAppointmentToGcal(appt.id);
   revalidatePath("/moje");
 }

@@ -33,6 +33,10 @@ model Provider {
   smsPeriodStart DateTime @default(now())
   secondReminder Boolean @default(false) // drugie przypomnienie 2h przed (solo_plus+)
 
+  // Google Calendar — podłączany osobno w ustawieniach (osobna zgoda niż logowanie Google)
+  gcalRefreshToken String?
+  gcalEmail        String? // konto Google, z którym połączono kalendarz
+
   createdAt     DateTime @default(now())
 
   services      Service[]
@@ -108,6 +112,7 @@ model Appointment {
   source      String   @default("online") // online | manual
   note        String?
   cancelToken String   @unique @default(cuid()) // do linku odwołania bez logowania
+  gcalEventId String?  // wydarzenie w Google Calendar usługodawcy (jeśli kalendarz podłączony)
 
   // flagi wysłanych SMS (żeby cron nie wysyłał podwójnie)
   confirmSent Boolean  @default(false)

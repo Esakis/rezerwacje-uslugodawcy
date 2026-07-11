@@ -7,6 +7,7 @@ import { isSlotFree } from "@/lib/slots";
 import { normalizePhone } from "@/lib/format";
 import { warsawTimeToUtc, addMinutes } from "@/lib/time";
 import { sendSms, confirmBody, cancelBody } from "@/lib/sms";
+import { syncAppointmentToGcal } from "@/lib/gcal";
 
 export type ActionResult = { ok: boolean; error?: string; message?: string };
 
@@ -92,6 +93,9 @@ export async function addManualAppointment(
     }
   }
 
+  // Wydarzenie w Google Calendar usługodawcy (best-effort).
+  await syncAppointmentToGcal(appt.id);
+
   revalidatePath("/panel/calendar");
   revalidatePath("/panel");
   return { ok: true, message: "Dodano wizytę." };
@@ -120,6 +124,9 @@ export async function setAppointmentStatus(id: string, status: string): Promise<
       body: cancelBody(provider.name, appt),
     });
   }
+
+  // Aktualizacja Google Calendar: odwołanie usuwa wydarzenie, przywrócenie tworzy je na nowo.
+  await syncAppointmentToGcal(appt.id);
 
   revalidatePath("/panel/calendar");
   revalidatePath("/panel");
