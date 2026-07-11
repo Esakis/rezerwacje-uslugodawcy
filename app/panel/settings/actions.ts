@@ -1,20 +1,55 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { appUrl } from "@/lib/google";
 import { getPlan, PLAN_ORDER, type PlanId } from "@/lib/plans";
+import { getStripe, stripeEnabled, stripePriceId } from "@/lib/stripe";
 import { slugify } from "@/lib/slug";
 
 export type ActionResult = { ok: boolean; error?: string; message?: string };
 
-// Zmiana planu. W produkcji: przekierowanie do Stripe Checkout.
-// Tu (bez kluczy Stripe) ustawiamy plan bezpośrednio — tryb demo.
+// Zmiana planu. Z kluczami Stripe: przekierowanie do Stripe Checkout
+// (plan ustawia dopiero webhook po opłaceniu). Bez kluczy: tryb demo — od razu.
 export async function changePlan(planId: string): Promise<void> {
   const provider = await requireProvider();
   if (!PLAN_ORDER.includes(planId as PlanId)) return;
   const plan = getPlan(planId as PlanId);
 
+  const priceId = stripePriceId(planId);
+  if (stripeEnabled() && priceId) {
+    const stripe = getStripe();
+
+    // Klient Stripe per usługodawca (tworzony przy pierwszym zakupie).
+    let customerId = provider.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: provider.email,
+        name: provider.name,
+        metadata: { providerId: provider.id },
+      });
+      customerId = customer.id;
+      await prisma.provider.update({
+        where: { id: provider.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${appUrl()}/panel/settings?billing=ok`,
+      cancel_url: `${appUrl()}/panel/settings?billing=cancel`,
+      metadata: { providerId: provider.id, planId },
+    });
+    if (!session.url) throw new Error("Stripe nie zwrócił adresu Checkout");
+    redirect(session.url); // rzuca NEXT_REDIRECT — koniec akcji
+  }
+
+  // Tryb demo (bez Stripe) — zmiana natychmiastowa.
   await prisma.provider.update({
     where: { id: provider.id },
     data: {
@@ -26,6 +61,18 @@ export async function changePlan(planId: string): Promise<void> {
   });
   revalidatePath("/panel");
   revalidatePath("/panel/settings");
+}
+
+// Portal klienta Stripe: zmiana karty, faktury, anulowanie subskrypcji.
+export async function openBillingPortal(): Promise<void> {
+  const provider = await requireProvider();
+  if (!stripeEnabled() || !provider.stripeCustomerId) return;
+
+  const session = await getStripe().billingPortal.sessions.create({
+    customer: provider.stripeCustomerId,
+    return_url: `${appUrl()}/panel/settings`,
+  });
+  redirect(session.url);
 }
 
 export async function updateProfile(

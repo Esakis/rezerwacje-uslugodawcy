@@ -38,6 +38,10 @@ model Provider {
   gcalRefreshToken String?
   gcalEmail        String? // konto Google, z którym połączono kalendarz
 
+  // Stripe Billing (produkcja; w trybie demo bez kluczy pola pozostają puste)
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String?
+
   createdAt     DateTime @default(now())
 
   services      Service[]

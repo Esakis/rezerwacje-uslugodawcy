@@ -1,17 +1,18 @@
 import { requireProvider } from "@/lib/auth";
 import { gcalEnabled } from "@/lib/gcal";
 import { getPlan, isUnlimited, smsLimitLabel } from "@/lib/plans";
+import { stripeEnabled } from "@/lib/stripe";
 import { bookingUrl } from "@/lib/tokens";
-import { disconnectGcal } from "./actions";
+import { disconnectGcal, openBillingPortal } from "./actions";
 import { PlanPicker } from "./plan-picker";
 import { ProfileForm } from "./profile-form";
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gcal?: string }>;
+  searchParams: Promise<{ gcal?: string; billing?: string }>;
 }) {
-  const { gcal } = await searchParams;
+  const { gcal, billing } = await searchParams;
   const provider = await requireProvider();
   const plan = getPlan(provider.plan);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -89,10 +90,32 @@ export default async function SettingsPage({
       {/* Plany */}
       <div className="card">
         <h2 className="mb-4 text-lg font-semibold">Plan subskrypcji</h2>
+        {billing === "ok" && (
+          <p className="mb-3 text-sm text-emerald-600">
+            Płatność przyjęta ✓ Plan aktywuje się po potwierdzeniu ze Stripe (zwykle kilka sekund) — odśwież stronę.
+          </p>
+        )}
+        {billing === "cancel" && (
+          <p className="mb-3 text-sm text-amber-600">Płatność anulowana — plan bez zmian.</p>
+        )}
         <PlanPicker current={provider.plan} />
-        <p className="mt-3 text-xs text-slate-400">
-          Tryb demo: zmiana planu następuje od razu. W wersji produkcyjnej płatność obsługuje Stripe Billing.
-        </p>
+        {stripeEnabled() ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="text-xs text-slate-400">Płatności i faktury obsługuje Stripe.</p>
+            {provider.stripeCustomerId && (
+              <form action={openBillingPortal}>
+                <button className="text-xs font-medium text-brand-600 underline">
+                  Zarządzaj subskrypcją (karta, faktury, anulowanie)
+                </button>
+              </form>
+            )}
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-slate-400">
+            Tryb demo: zmiana planu następuje od razu. W wersji produkcyjnej płatność obsługuje Stripe Billing
+            (ustaw zmienne STRIPE_* — patrz .env.example).
+          </p>
+        )}
       </div>
 
       {/* Profil */}

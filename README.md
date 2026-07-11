@@ -112,15 +112,21 @@ public/                    manifest.webmanifest, sw.js, offline.html, icons/ (PW
 capacitor.config.ts        powłoka natywna Android/iOS (patrz MOBILE.md)
 ```
 
-## Świadome uproszczenia względem produkcji (patrz PLAN.md)
+## Droga do produkcji (checklista)
 
-Aplikacja jest w pełni uruchamialna lokalnie bez zewnętrznych kont. W wersji produkcyjnej:
+Aplikacja jest w pełni uruchamialna lokalnie bez zewnętrznych kont (tryb demo).
+Wszystkie integracje produkcyjne włącza się zmiennymi środowiskowymi — patrz **`.env.example`**:
 
-- **Baza:** zamień SQLite → PostgreSQL (Supabase/Neon). Schema już jest zgodna.
-- **Płatności:** zmiana planu jest teraz natychmiastowa (tryb demo). Podłącz **Stripe Billing**
-  (Checkout + webhook) — miejsca oznaczone w `app/panel/settings/actions.ts`.
-- **SMS:** ustaw realną bramkę SMSAPI.pl. Własne pole nadawcy wymaga rejestracji u operatora.
-- **Auth:** można zostać przy sesjach cookie albo przejść na Supabase Auth (jak sugeruje plan).
+1. **Baza:** SQLite → PostgreSQL (Supabase/Neon): zmień `provider` na `postgresql`
+   w `prisma/schema.prisma`, ustaw `DATABASE_URL`, uruchom `npx prisma db push`.
+2. **Płatności (Stripe Billing — zaimplementowane):** ustaw `STRIPE_SECRET_KEY`,
+   `STRIPE_WEBHOOK_SECRET` i `STRIPE_PRICE_*`. Zmiana planu przechodzi wtedy przez
+   **Stripe Checkout**, plan aktywuje webhook `/api/webhooks/stripe` po opłaceniu,
+   a anulowanie subskrypcji odbiera plan. „Zarządzaj subskrypcją" otwiera Stripe Customer Portal.
+   Bez kluczy: tryb demo (zmiana natychmiastowa).
+3. **SMS:** `SMS_PROVIDER=smsapi` + `SMSAPI_TOKEN`. Własne pole nadawcy wymaga rejestracji u operatora.
+4. **Sekrety:** ustaw silne `APP_SECRET` i `CRON_SECRET`; `NEXT_PUBLIC_APP_URL` na domenę produkcyjną.
+5. **Auth:** można zostać przy sesjach cookie albo przejść na Supabase Auth (jak sugeruje plan).
 
 Poza MVP (roadmapa v2 z planu): zaliczki BLIK, pełny sync Google Calendar przez webhooki
 (teraz: push wydarzeń + freeBusy przy liczeniu slotów).
