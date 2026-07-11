@@ -18,6 +18,7 @@ Kalendarz online + automatyczne przypomnienia SMS dla jednoosobowych usługodawc
 - ✅ **Plany i limity SMS** — Trial / Solo / Solo+ / **Biznes (nielimitowane SMS)**, subskrypcja miesięczna, licznik zużycia
 - ✅ **Aplikacja mobilna** — responsywna **PWA** (instalowalna, offline) + konfiguracja **Capacitor** do Google Play / App Store (patrz [MOBILE.md](./MOBILE.md))
 - ✅ **Google Calendar** — podłączany w `/panel/settings`; rezerwacje trafiają do kalendarza Google usługodawcy, odwołania usuwają wydarzenie, a zajętości z Google (freeBusy) blokują sloty rezerwacji online (traktowane jak blokada całego salonu)
+- ✅ **Statystyki** — `/panel/stats`: przychód, no-show rate, udział rezerwacji online, najpopularniejsze usługi i przychód miesięcznie (okres 30/90/365 dni)
 
 ## Stack
 
@@ -93,6 +94,7 @@ app/
     staff/                 zespół (pracownicy) — CRUD, limit wg planu
     services, hours/       konfiguracja usług i godzin pracy
     clients, settings/     baza klientów, plan i ustawienia SMS
+    stats/                 statystyki: przychód, no-show rate, top usługi
   api/
     auth/google/           OAuth Google: start + callback
     public/[slug]/slots    liczenie wolnych terminów (per-osoba)
@@ -119,5 +121,5 @@ Aplikacja jest w pełni uruchamialna lokalnie bez zewnętrznych kont. W wersji p
 - **SMS:** ustaw realną bramkę SMSAPI.pl. Własne pole nadawcy wymaga rejestracji u operatora.
 - **Auth:** można zostać przy sesjach cookie albo przejść na Supabase Auth (jak sugeruje plan).
 
-Poza MVP (roadmapa v2 z planu): zaliczki BLIK, statystyki, pełny sync Google Calendar przez webhooki
-(teraz: push wydarzeń + freeBusy przy liczeniu slotów).
+Poza MVP (roadmapa v2 z planu): zaliczki BLIK, pełny sync Google Calendar przez webhooki
+(teraz: push wydarzeń + freeBusy przy liczeniu slotów), SMS „wróć do nas" (reaktywacja klientów).

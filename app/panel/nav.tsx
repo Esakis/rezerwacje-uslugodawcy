@@ -9,6 +9,7 @@ import {
   IconClock,
   IconUsers,
   IconUser,
+  IconChart,
   IconSettings,
 } from "@/app/icons";
 
@@ -19,6 +20,7 @@ const LINKS = [
   { href: "/panel/services", label: "Usługi", Icon: IconScissors },
   { href: "/panel/hours", label: "Godziny", Icon: IconClock },
   { href: "/panel/clients", label: "Klienci", Icon: IconUser },
+  { href: "/panel/stats", label: "Statystyki", Icon: IconChart },
   { href: "/panel/settings", label: "Plan", Icon: IconSettings },
 ];
 
