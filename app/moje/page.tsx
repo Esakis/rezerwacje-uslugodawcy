@@ -77,7 +77,7 @@ export default async function ClientPanelPage() {
                       {weekdayNamePl(warsawWeekday(a.startAt))}, {fmtDateHuman(a.startAt)} • {fmtTime(a.startAt)}
                     </div>
                     <div className="text-sm text-ink-600">
-                      {a.service ? `${a.service.name} · ${fmtPrice(a.service.priceGrosze)}` : "Wizyta"}
+                      {a.service ? `${a.service.name} · ${fmtPrice(a.priceGrosze ?? a.service.priceGrosze)}` : "Wizyta"}
                       {a.staff && <> · {a.staff.name}</>}
                     </div>
                   </div>

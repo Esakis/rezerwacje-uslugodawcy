@@ -87,6 +87,7 @@ export async function POST(
       staffId: chosenStaffId,
       startAt,
       endAt,
+      priceGrosze: service.priceGrosze,
       status: "booked",
       source: "online",
     },

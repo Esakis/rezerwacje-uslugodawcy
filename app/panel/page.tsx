@@ -66,7 +66,7 @@ export default async function DashboardPage() {
                     {a.client?.name ?? "—"} · {a.client?.phone ?? ""}
                     {a.service && (
                       <>
-                        {" "}· {a.service.name} ({fmtPrice(a.service.priceGrosze)})
+                        {" "}· {a.service.name} ({fmtPrice(a.priceGrosze ?? a.service.priceGrosze)})
                       </>
                     )}
                   </div>

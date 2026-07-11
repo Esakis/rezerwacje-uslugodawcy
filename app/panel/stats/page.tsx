@@ -5,8 +5,8 @@ import { fmtPrice } from "@/lib/format";
 import { addDays, fmtDate } from "@/lib/time";
 
 // Statystyki (roadmapa v2, PLAN.md sekcja 8): przychody, no-show rate, najpopularniejsze usługi.
-// Uproszczenie: wizyta nie przechowuje ceny z momentu rezerwacji — przychód liczony
-// po bieżącej cenie usługi (zmiana cennika zmienia też statystyki historyczne).
+// Przychód liczony ze snapshotu ceny zapisanego przy rezerwacji (Appointment.priceGrosze);
+// dla starszych wizyt bez snapshotu — fallback na bieżącą cenę usługi.
 
 const PERIODS = [
   { days: 30, label: "30 dni" },
@@ -56,6 +56,7 @@ export default async function StatsPage({
         status: true,
         source: true,
         serviceId: true,
+        priceGrosze: true,
         service: { select: { name: true, priceGrosze: true } },
       },
     }),
@@ -66,14 +67,14 @@ export default async function StatsPage({
         status: "done",
         startAt: { gte: addDays(now, -(MONTH_CHART_COUNT + 1) * 31), lte: now },
       },
-      select: { startAt: true, service: { select: { priceGrosze: true } } },
+      select: { startAt: true, priceGrosze: true, service: { select: { priceGrosze: true } } },
     }),
   ]);
 
   const done = inPeriod.filter((a) => a.status === "done");
   const noShow = inPeriod.filter((a) => a.status === "no_show");
   const cancelled = inPeriod.filter((a) => a.status === "cancelled");
-  const revenue = done.reduce((sum, a) => sum + (a.service?.priceGrosze ?? 0), 0);
+  const revenue = done.reduce((sum, a) => sum + (a.priceGrosze ?? a.service?.priceGrosze ?? 0), 0);
   const finished = done.length + noShow.length;
   const noShowRate = finished > 0 ? noShow.length / finished : null;
   const online = inPeriod.filter((a) => a.source === "online").length;
@@ -85,7 +86,7 @@ export default async function StatsPage({
     if (a.status === "cancelled" || !a.serviceId || !a.service) continue;
     const entry = byService.get(a.serviceId) ?? { name: a.service.name, count: 0, revenue: 0 };
     entry.count++;
-    if (a.status === "done") entry.revenue += a.service.priceGrosze;
+    if (a.status === "done") entry.revenue += a.priceGrosze ?? a.service.priceGrosze;
     byService.set(a.serviceId, entry);
   }
   const topServices = [...byService.entries()]
@@ -100,7 +101,7 @@ export default async function StatsPage({
   for (const a of doneForMonths) {
     const key = fmtDate(a.startAt).slice(0, 7);
     if (byMonth.has(key)) {
-      byMonth.set(key, (byMonth.get(key) ?? 0) + (a.service?.priceGrosze ?? 0));
+      byMonth.set(key, (byMonth.get(key) ?? 0) + (a.priceGrosze ?? a.service?.priceGrosze ?? 0));
     }
   }
   const maxMonthRevenue = Math.max(...byMonth.values(), 1);
@@ -197,7 +198,7 @@ export default async function StatsPage({
           })}
         </ul>
         <p className="mt-3 text-xs text-slate-400">
-          Zrealizowane wizyty z ostatnich {MONTH_CHART_COUNT} miesięcy, wg bieżących cen usług.
+          Zrealizowane wizyty z ostatnich {MONTH_CHART_COUNT} miesięcy, wg cen z momentu rezerwacji.
         </p>
       </div>
     </div>

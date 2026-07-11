@@ -131,7 +131,7 @@ export default async function CalendarPage({
                     <div className="font-semibold">{fmtTime(a.startAt)}–{fmtTime(a.endAt)}</div>
                     <div className="truncate">{a.client?.name ?? "—"}</div>
                     <div className="truncate text-slate-500">
-                      {a.service ? `${a.service.name} · ${fmtPrice(a.service.priceGrosze)}` : "—"}
+                      {a.service ? `${a.service.name} · ${fmtPrice(a.priceGrosze ?? a.service.priceGrosze)}` : "—"}
                     </div>
                     {a.staff && (
                       <div className="truncate text-brand-600">→ {a.staff.name}</div>

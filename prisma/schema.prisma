@@ -110,6 +110,7 @@ model Appointment {
 
   startAt     DateTime // UTC
   endAt       DateTime // UTC
+  priceGrosze Int?     // snapshot ceny usługi z momentu rezerwacji (null = starsze wizyty; fallback na bieżącą cenę)
   status      String   @default("booked") // booked | cancelled | no_show | done
   source      String   @default("online") // online | manual
   note        String?

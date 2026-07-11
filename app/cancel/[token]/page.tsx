@@ -31,7 +31,7 @@ export default async function CancelPage({
               <p><span className="text-slate-400">Usługa:</span> {appt.service?.name ?? "—"}</p>
               <p><span className="text-slate-400">Termin:</span> {fmtDateTime(appt.startAt)}</p>
               {appt.service && (
-                <p><span className="text-slate-400">Cena:</span> {fmtPrice(appt.service.priceGrosze)}</p>
+                <p><span className="text-slate-400">Cena:</span> {fmtPrice(appt.priceGrosze ?? appt.service.priceGrosze)}</p>
               )}
             </div>
 

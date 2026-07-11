@@ -75,6 +75,7 @@ export async function addManualAppointment(
       staffId,
       startAt,
       endAt,
+      priceGrosze: service?.priceGrosze,
       status: "booked",
       source: "manual",
     },
