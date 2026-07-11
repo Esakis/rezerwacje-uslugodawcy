@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { subscriptionActive } from "@/lib/plans";
-import { addMinutes } from "@/lib/time";
-import { sendSms, reminder24Body, reminder2Body } from "@/lib/sms";
+import { getPlan, subscriptionActive } from "@/lib/plans";
+import { addDays, addMinutes } from "@/lib/time";
+import { sendSms, reminder24Body, reminder2Body, reactivationBody } from "@/lib/sms";
 
 // Cron przypomnień SMS (PLAN.md sekcja 3: cron co 5 min odpytuje wizyty w oknie przypomnienia).
 // Na Vercel: skonfigurowane w vercel.json. Chronione nagłówkiem Authorization: Bearer <CRON_SECRET>.
@@ -88,11 +88,72 @@ async function handle(req: NextRequest) {
     }
   }
 
+  // --- SMS „wróć do nas" (reaktywacja; plan z tą funkcją + włączone w ustawieniach) ---
+  // Limit na provider/przebieg: włączenie funkcji przy dużej bazie nieaktywnych klientów
+  // nie może zużyć całego pakietu SMS w jednym przebiegu crona.
+  const REACTIVATION_BATCH = 20;
+  let sentReactivation = 0;
+
+  const reactProviders = await prisma.provider.findMany({
+    where: { reactivationWeeks: { gt: 0 } },
+  });
+
+  for (const p of reactProviders) {
+    if (!getPlan(p.plan).reactivation) continue;
+    if (!subscriptionActive(p.plan, p.trialUntil)) continue;
+    const cutoff = addDays(now, -p.reactivationWeeks * 7);
+
+    // Klienci z co najmniej jedną zrealizowaną wizytą i bez zaplanowanej przyszłej.
+    const clients = await prisma.client.findMany({
+      where: {
+        providerId: p.id,
+        appointments: { some: { status: "done" } },
+        NOT: { appointments: { some: { status: "booked", startAt: { gt: now } } } },
+      },
+      include: {
+        appointments: {
+          where: { status: "done" },
+          orderBy: { startAt: "desc" },
+          take: 1,
+          select: { startAt: true },
+        },
+      },
+    });
+
+    let batch = 0;
+    for (const c of clients) {
+      if (batch >= REACTIVATION_BATCH) break;
+      const lastVisit = c.appointments[0]?.startAt;
+      if (!lastVisit || lastVisit > cutoff) continue;
+      // Nie powtarzaj — wyślij ponownie dopiero, gdy klient znów był na wizycie.
+      if (c.reactivationSentAt && c.reactivationSentAt >= lastVisit) continue;
+
+      const res = await sendSms({
+        providerId: p.id,
+        type: "reactivation",
+        to: c.phone,
+        body: reactivationBody(p.name, c.name, p.slug),
+      });
+      if (res.ok) {
+        await prisma.client.update({
+          where: { id: c.id },
+          data: { reactivationSentAt: now },
+        });
+        sentReactivation++;
+        batch++;
+      } else {
+        skipped++;
+        if (res.status === "skipped_limit") break; // limit SMS wyczerpany — nie próbuj dalej
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     ranAt: now.toISOString(),
     sent24,
     sent2,
+    sentReactivation,
     skipped,
   });
 }

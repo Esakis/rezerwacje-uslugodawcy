@@ -7,6 +7,7 @@ export interface Plan {
   pricePlnMonth: number;
   smsLimit: number; // -1 = bez limitu
   secondReminder: boolean;
+  reactivation: boolean; // SMS „wróć do nas" po X tygodniach od ostatniej wizyty
   customSender: boolean;
   staffLimit: number; // ilu pracowników („do kogo") dozwolonych
   highlight?: boolean; // wyróżnienie w cenniku
@@ -22,6 +23,7 @@ export const PLANS: Record<PlanId, Plan> = {
     pricePlnMonth: 0,
     smsLimit: 50,
     secondReminder: false,
+    reactivation: false,
     customSender: false,
     staffLimit: 1,
     tagline: "Przetestuj wszystko przez 14 dni",
@@ -32,6 +34,7 @@ export const PLANS: Record<PlanId, Plan> = {
     pricePlnMonth: 29,
     smsLimit: 150,
     secondReminder: false,
+    reactivation: false,
     customSender: false,
     staffLimit: 1,
     tagline: "Dla jednoosobowej działalności",
@@ -42,6 +45,7 @@ export const PLANS: Record<PlanId, Plan> = {
     pricePlnMonth: 49,
     smsLimit: 400,
     secondReminder: true,
+    reactivation: true,
     customSender: true,
     staffLimit: 3,
     highlight: true,
@@ -53,6 +57,7 @@ export const PLANS: Record<PlanId, Plan> = {
     pricePlnMonth: 99,
     smsLimit: UNLIMITED,
     secondReminder: true,
+    reactivation: true,
     customSender: true,
     staffLimit: 20,
     tagline: "Nielimitowane SMS-y, bez martwienia się o pakiety",

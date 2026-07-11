@@ -19,6 +19,7 @@ Kalendarz online + automatyczne przypomnienia SMS dla jednoosobowych usługodawc
 - ✅ **Aplikacja mobilna** — responsywna **PWA** (instalowalna, offline) + konfiguracja **Capacitor** do Google Play / App Store (patrz [MOBILE.md](./MOBILE.md))
 - ✅ **Google Calendar** — podłączany w `/panel/settings`; rezerwacje trafiają do kalendarza Google usługodawcy, odwołania usuwają wydarzenie, a zajętości z Google (freeBusy) blokują sloty rezerwacji online (traktowane jak blokada całego salonu)
 - ✅ **Statystyki** — `/panel/stats`: przychód, no-show rate, udział rezerwacji online, najpopularniejsze usługi i przychód miesięcznie (okres 30/90/365 dni)
+- ✅ **SMS „wróć do nas"** — automatyczna reaktywacja klientów po 4/6/8/12 tygodniach od ostatniej wizyty (plan Solo+; włączane w ustawieniach, wysyłka przez cron)
 
 ## Stack
 
@@ -122,4 +123,4 @@ Aplikacja jest w pełni uruchamialna lokalnie bez zewnętrznych kont. W wersji p
 - **Auth:** można zostać przy sesjach cookie albo przejść na Supabase Auth (jak sugeruje plan).
 
 Poza MVP (roadmapa v2 z planu): zaliczki BLIK, pełny sync Google Calendar przez webhooki
-(teraz: push wydarzeń + freeBusy przy liczeniu slotów), SMS „wróć do nas" (reaktywacja klientów).
+(teraz: push wydarzeń + freeBusy przy liczeniu slotów).

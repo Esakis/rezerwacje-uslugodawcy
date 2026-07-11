@@ -11,8 +11,10 @@ export function ProfileForm({
   slug,
   smsSenderName,
   secondReminder,
+  reactivationWeeks,
   customSenderAllowed,
   secondReminderAllowed,
+  reactivationAllowed,
   appUrl,
 }: {
   name: string;
@@ -20,8 +22,10 @@ export function ProfileForm({
   slug: string;
   smsSenderName: string | null;
   secondReminder: boolean;
+  reactivationWeeks: number;
   customSenderAllowed: boolean;
   secondReminderAllowed: boolean;
+  reactivationAllowed: boolean;
   appUrl: string;
 }) {
   const [state, action, pending] = useActionState(updateProfile, initial);
@@ -72,6 +76,27 @@ export function ProfileForm({
         />
         Wysyłaj drugie przypomnienie 2 h przed wizytą {!secondReminderAllowed && "(plan Solo+)"}
       </label>
+
+      <div>
+        <label className="label">
+          SMS „wróć do nas" {!reactivationAllowed && <span className="text-xs text-slate-400">(plan Solo+)</span>}
+        </label>
+        <select
+          name="reactivationWeeks"
+          defaultValue={String(reactivationWeeks)}
+          className="input"
+          disabled={!reactivationAllowed}
+        >
+          <option value="0">Wyłączone</option>
+          <option value="4">Po 4 tygodniach od ostatniej wizyty</option>
+          <option value="6">Po 6 tygodniach od ostatniej wizyty</option>
+          <option value="8">Po 8 tygodniach od ostatniej wizyty</option>
+          <option value="12">Po 12 tygodniach od ostatniej wizyty</option>
+        </select>
+        <p className="mt-1 text-xs text-slate-400">
+          Automatyczny SMS z zaproszeniem i linkiem do rezerwacji dla klientów bez zaplanowanej wizyty.
+        </p>
+      </div>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state.ok && state.message && <p className="text-sm text-emerald-600">{state.message}</p>}

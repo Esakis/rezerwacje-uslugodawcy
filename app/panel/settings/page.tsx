@@ -104,8 +104,10 @@ export default async function SettingsPage({
           slug={provider.slug}
           smsSenderName={provider.smsSenderName}
           secondReminder={provider.secondReminder}
+          reactivationWeeks={provider.reactivationWeeks}
           customSenderAllowed={plan.customSender}
           secondReminderAllowed={plan.secondReminder}
+          reactivationAllowed={plan.reactivation}
           appUrl={appUrl}
         />
       </div>

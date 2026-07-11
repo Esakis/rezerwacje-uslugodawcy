@@ -38,6 +38,7 @@ export async function updateProfile(
   const slugInput = String(formData.get("slug") || "").trim();
   const smsSenderName = String(formData.get("smsSenderName") || "").trim() || null;
   const secondReminder = formData.get("secondReminder") === "on";
+  const reactivationWeeks = Number(formData.get("reactivationWeeks") || 0);
 
   if (!name) return { ok: false, error: "Podaj nazwę." };
 
@@ -61,6 +62,9 @@ export async function updateProfile(
       smsSenderName: plan.customSender ? smsSenderName : null,
       // Drugie przypomnienie tylko jeśli plan pozwala.
       secondReminder: plan.secondReminder ? secondReminder : false,
+      // SMS „wróć do nas": tylko plan z tą funkcją i dozwolone wartości (0 = wyłączone).
+      reactivationWeeks:
+        plan.reactivation && [0, 4, 6, 8, 12].includes(reactivationWeeks) ? reactivationWeeks : 0,
     },
   });
 

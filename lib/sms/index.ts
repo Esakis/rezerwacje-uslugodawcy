@@ -2,12 +2,12 @@ import type { Provider } from "@prisma/client";
 import { prisma } from "../db";
 import { getPlan, smsAvailable } from "../plans";
 import { fmtDateHuman, fmtTime } from "../time";
-import { cancelUrl } from "../tokens";
+import { bookingUrl, cancelUrl } from "../tokens";
 import { MockSmsProvider } from "./mock";
 import type { SmsProvider } from "./provider";
 import { SmsApiProvider } from "./smsapi";
 
-export type SmsType = "confirm" | "reminder24" | "reminder2" | "cancel" | "login";
+export type SmsType = "confirm" | "reminder24" | "reminder2" | "cancel" | "login" | "reactivation";
 
 function getProvider(): SmsProvider {
   const kind = process.env.SMS_PROVIDER || "mock";
@@ -166,4 +166,12 @@ export function cancelBody(providerName: string, appt: ApptForSms): string {
   return `${providerName}: Twoja wizyta ${fmtDateHuman(appt.startAt)} o ${fmtTime(
     appt.startAt
   )} została odwołana.`;
+}
+
+// SMS „wróć do nas" — reaktywacja klienta po dłuższej przerwie (PLAN.md sekcja 8 pkt 5).
+export function reactivationBody(providerName: string, clientName: string, slug: string): string {
+  return (
+    `${clientName}, dawno się nie widzieliśmy! ${providerName} zaprasza ponownie.\n` +
+    `Zarezerwuj termin online: ${bookingUrl(slug)}`
+  );
 }

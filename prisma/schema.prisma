@@ -32,6 +32,7 @@ model Provider {
   smsUsed       Int      @default(0) // licznik SMS w bieżącym okresie
   smsPeriodStart DateTime @default(now())
   secondReminder Boolean @default(false) // drugie przypomnienie 2h przed (solo_plus+)
+  reactivationWeeks Int  @default(0) // SMS „wróć do nas" po X tygodniach od ostatniej wizyty; 0 = wyłączone (solo_plus+)
 
   // Google Calendar — podłączany osobno w ustawieniach (osobna zgoda niż logowanie Google)
   gcalRefreshToken String?
@@ -87,6 +88,7 @@ model Client {
   name       String
   phone      String   // identyfikator klienta u danego usługodawcy
   notes      String?
+  reactivationSentAt DateTime? // kiedy wysłano ostatni SMS „wróć do nas" (żeby nie powtarzać)
   createdAt  DateTime @default(now())
 
   appointments Appointment[]
@@ -147,7 +149,7 @@ model SmsLog {
   provider      Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  type          String   // confirm | reminder24 | reminder2 | cancel | login
+  type          String   // confirm | reminder24 | reminder2 | cancel | login | reactivation
   phone         String
   body          String
   status        String   // sent | failed | skipped_limit
