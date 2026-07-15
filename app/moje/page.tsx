@@ -9,6 +9,25 @@ import { CancelButton } from "./cancel-button";
 import { logoutClient } from "./actions";
 import { StatusBadge } from "../panel/ui";
 
+// Data YYYY-MM-DD w strefie warszawskiej (do liczenia "dziś/jutro/za N dni").
+function warsawDateStr(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Warsaw",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+function daysUntilLabel(d: Date, now: Date): string {
+  const diff = Math.round(
+    (Date.parse(warsawDateStr(d)) - Date.parse(warsawDateStr(now))) / 86400000
+  );
+  if (diff <= 0) return "dziś";
+  if (diff === 1) return "jutro";
+  return `za ${diff} dni`;
+}
+
 export default async function ClientPanelPage() {
   const phone = await getClientPhone();
 
@@ -42,6 +61,12 @@ export default async function ClientPanelPage() {
     .sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
   const past = appts.filter((a) => !(a.status === "booked" && a.startAt >= now));
 
+  // Usługodawcy klienta (z ostatnich wizyt) — do szybkiej ponownej rezerwacji.
+  const myProviders: { slug: string; name: string }[] = [];
+  for (const a of appts) {
+    if (!myProviders.some((p) => p.slug === a.provider.slug)) myProviders.push(a.provider);
+  }
+
   return (
     <main className="min-h-screen bg-ink-50">
       <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/80 backdrop-blur-md safe-t">
@@ -59,19 +84,42 @@ export default async function ClientPanelPage() {
       </header>
 
       <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 safe-b">
+        {myProviders.length > 0 && (
+          <section>
+            <h2 className="mb-3 text-lg font-semibold">Zarezerwuj ponownie</h2>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {myProviders.map((p) => (
+                <li key={p.slug} className="card flex items-center justify-between gap-3 py-3">
+                  <span className="font-medium">{p.name}</span>
+                  <a href={`/${p.slug}`} className="btn-secondary px-3 py-1.5 text-sm">
+                    Zarezerwuj →
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section>
           <h2 className="mb-3 text-lg font-semibold">Nadchodzące</h2>
           {upcoming.length === 0 ? (
             <div className="card text-sm text-ink-500">
-              Brak zaplanowanych wizyt. Zarezerwuj termin u swojego usługodawcy.
+              {myProviders.length > 0
+                ? "Brak zaplanowanych wizyt — umów się ponownie jednym kliknięciem powyżej."
+                : "Brak zaplanowanych wizyt. Otwórz stronę rezerwacji swojego usługodawcy (link znajdziesz np. w jego bio na Instagramie), a wizyty pojawią się tutaj."}
             </div>
           ) : (
             <ul className="space-y-3">
               {upcoming.map((a) => (
                 <li key={a.id} className="card flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="text-xs font-medium uppercase tracking-wide text-brand-600">
-                      {a.provider.name}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium uppercase tracking-wide text-brand-600">
+                        {a.provider.name}
+                      </span>
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                        {daysUntilLabel(a.startAt, now)}
+                      </span>
                     </div>
                     <div className="mt-0.5 font-semibold">
                       {weekdayNamePl(warsawWeekday(a.startAt))}, {fmtDateHuman(a.startAt)} • {fmtTime(a.startAt)}
@@ -111,7 +159,12 @@ export default async function ClientPanelPage() {
                       {a.staff && <> · {a.staff.name}</>}
                     </div>
                   </div>
-                  <StatusBadge status={a.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={a.status} />
+                    <a href={`/${a.provider.slug}`} className="btn-ghost px-3 py-1.5 text-xs">
+                      Umów ponownie
+                    </a>
+                  </div>
                 </li>
               ))}
             </ul>
