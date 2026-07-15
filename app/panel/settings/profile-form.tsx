@@ -53,7 +53,7 @@ export function ProfileForm({
 
       <div>
         <label className="label">
-          Nazwa nadawcy SMS {!customSenderAllowed && <span className="text-xs text-slate-400">(plan Solo+)</span>}
+          Nazwa nadawcy SMS {!customSenderAllowed && <span className="text-xs text-slate-400">(plan Pro)</span>}
         </label>
         <input
           name="smsSenderName"
@@ -74,12 +74,12 @@ export function ProfileForm({
           disabled={!secondReminderAllowed}
           className="rounded"
         />
-        Wysyłaj drugie przypomnienie 2 h przed wizytą {!secondReminderAllowed && "(plan Solo+)"}
+        Wysyłaj drugie przypomnienie 2 h przed wizytą {!secondReminderAllowed && "(plan Pro)"}
       </label>
 
       <div>
         <label className="label">
-          SMS „wróć do nas" {!reactivationAllowed && <span className="text-xs text-slate-400">(plan Solo+)</span>}
+          SMS „wróć do nas" {!reactivationAllowed && <span className="text-xs text-slate-400">(plan Pro)</span>}
         </label>
         <select
           name="reactivationWeeks"

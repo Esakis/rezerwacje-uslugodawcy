@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProvider } from "@/lib/auth";
-import { getPlan, subscriptionActive, smsLimitLabel, isUnlimited } from "@/lib/plans";
+import { getPlan, subscriptionActive, isUnlimited } from "@/lib/plans";
 import { bookingUrl } from "@/lib/tokens";
 import { logoutAction } from "./actions";
 import { PanelNav, PanelMobileNav } from "./nav";
@@ -80,7 +80,7 @@ export default async function PanelLayout({
         </div>
       ) : trialDaysLeft !== null ? (
         <div className="bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
-          Trial: pozostało {trialDaysLeft} dni. Wykorzystano {provider.smsUsed}/{smsLimitLabel(plan)} SMS.{" "}
+          Trial: pozostało {trialDaysLeft} dni.{" "}
           <Link href="/panel/settings" className="font-medium underline">
             Wybierz plan
           </Link>

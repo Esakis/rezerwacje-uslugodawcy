@@ -15,11 +15,11 @@ Kalendarz online + automatyczne przypomnienia SMS dla jednoosobowych usługodawc
 - ✅ **Odwoływanie przez klienta** — link z SMS (`/cancel/<token>`), bez logowania
 - ✅ **Panel klienta** `/moje` — klient loguje się **kodem SMS** (bez hasła) i widzi swoje wizyty (nadchodzące + historia), może odwołać/zmienić termin
 - ✅ **Logowanie usługodawcy** — e-mail/hasło **oraz Google** (OAuth, włączane przez zmienne środowiskowe)
-- ✅ **Plany i limity SMS** — Trial / Solo / Solo+ / **Biznes (nielimitowane SMS)**, subskrypcja miesięczna, licznik zużycia
+- ✅ **Plany** — darmowy **Trial** (14 dni) i **Pro** (49 zł/mies., wszystkie funkcje), subskrypcja miesięczna; wewnętrzny limit SMS jako bezpiecznik anty-nadużyciowy (konta ze starych planów Solo/Solo+/Biznes działają jak Pro)
 - ✅ **Aplikacja mobilna** — responsywna **PWA** (instalowalna, offline) + konfiguracja **Capacitor** do Google Play / App Store (patrz [MOBILE.md](./MOBILE.md))
 - ✅ **Google Calendar** — podłączany w `/panel/settings`; rezerwacje trafiają do kalendarza Google usługodawcy, odwołania usuwają wydarzenie, a zajętości z Google (freeBusy) blokują sloty rezerwacji online (traktowane jak blokada całego salonu)
 - ✅ **Statystyki** — `/panel/stats`: przychód, no-show rate, udział rezerwacji online, najpopularniejsze usługi i przychód miesięcznie (okres 30/90/365 dni)
-- ✅ **SMS „wróć do nas"** — automatyczna reaktywacja klientów po 4/6/8/12 tygodniach od ostatniej wizyty (plan Solo+; włączane w ustawieniach, wysyłka przez cron)
+- ✅ **SMS „wróć do nas"** — automatyczna reaktywacja klientów po 4/6/8/12 tygodniach od ostatniej wizyty (plan Pro; włączane w ustawieniach, wysyłka przez cron)
 
 ## Stack
 
@@ -105,7 +105,7 @@ lib/
   slots.ts                 silnik slotów per-osoba (godziny − wizyty − blokady, z buforem)
   sms/                     abstrakcja bramki: provider.ts, mock.ts, smsapi.ts, index.ts (szablony+limity)
   auth.ts, client-auth.ts  sesje usługodawcy i klienta (JWT cookie)
-  google.ts, plans.ts      OAuth Google, definicje planów (w tym Biznes/nielimit)
+  google.ts, plans.ts      OAuth Google, definicje planów (Trial + Pro)
   time.ts, format.ts, workingHours.ts, slug.ts, tokens.ts
 prisma/schema.prisma       model: providers, staff, services, clients, appointments, blocks, sms_log, login_codes
 public/                    manifest.webmanifest, sw.js, offline.html, icons/ (PWA)

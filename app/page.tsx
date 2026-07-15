@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PLANS, PLAN_ORDER, smsLimitLabel, isUnlimited } from "@/lib/plans";
+import { PLANS, PLAN_ORDER } from "@/lib/plans";
 import { InstallAppButton } from "./install-app";
 import {
   IconClock,
@@ -91,7 +91,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold tracking-tight">Prosty cennik</h2>
           <p className="mt-2 text-ink-600">Miesięczna subskrypcja. Zmień plan lub zrezygnuj w dowolnym momencie.</p>
         </div>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto mt-8 grid max-w-3xl gap-5 sm:grid-cols-2">
           {PLAN_ORDER.map((id) => {
             const p = PLANS[id];
             const highlight = p.highlight;
@@ -107,11 +107,6 @@ export default function LandingPage() {
                     Najczęściej wybierany
                   </span>
                 )}
-                {isUnlimited(p) && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-ink-900 px-3 py-1 text-xs font-semibold text-white">
-                    Nielimitowane SMS
-                  </span>
-                )}
                 <div className="text-sm font-semibold text-brand-600">{p.name}</div>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-4xl font-bold">{p.pricePlnMonth === 0 ? "0 zł" : `${p.pricePlnMonth} zł`}</span>
@@ -119,20 +114,19 @@ export default function LandingPage() {
                 </div>
                 <p className="mt-2 text-sm text-ink-500">{p.tagline}</p>
                 <ul className="mt-5 flex-1 space-y-2.5 text-sm text-ink-700">
-                  <Li>
-                    <strong>{smsLimitLabel(p)}</strong> SMS {id === "trial" ? "" : "/ mies."}
-                  </Li>
+                  <Li>Automatyczne potwierdzenia i przypomnienia</Li>
                   <Li>
                     {p.staffLimit === 1 ? "1 osoba" : `do ${p.staffLimit} osób w zespole`}
                   </Li>
                   <Li>Publiczna strona rezerwacji</Li>
                   <Li>Kalendarz i baza klientów</Li>
                   {p.secondReminder && <Li>Drugie przypomnienie 2 h przed</Li>}
-                  {p.customSender && <Li>Własna nazwa nadawcy SMS</Li>}
+                  {p.reactivation && <Li>Automatyczna reaktywacja klientów</Li>}
+                  {p.customSender && <Li>Własna nazwa nadawcy</Li>}
                 </ul>
                 <Link
                   href="/register"
-                  className={highlight || isUnlimited(p) ? "btn-primary mt-6" : "btn-secondary mt-6"}
+                  className={highlight ? "btn-primary mt-6" : "btn-secondary mt-6"}
                 >
                   {id === "trial" ? "Zacznij za darmo" : "Wybierz plan"}
                 </Link>

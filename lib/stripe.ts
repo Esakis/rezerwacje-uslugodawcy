@@ -3,8 +3,8 @@
 // a zmiana planu działa w trybie demo (natychmiastowa, bez płatności).
 //
 // Wymagane zmienne: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET oraz
-// STRIPE_PRICE_SOLO / STRIPE_PRICE_SOLO_PLUS / STRIPE_PRICE_BIZNES
-// (ID cen utworzonych w dashboardzie Stripe, subskrypcje miesięczne PLN).
+// STRIPE_PRICE_PRO (ID ceny utworzonej w dashboardzie Stripe,
+// subskrypcja miesięczna PLN dla planu Pro).
 
 import Stripe from "stripe";
 
@@ -24,9 +24,7 @@ export function getStripe(): Stripe {
 // Mapowanie planu na Stripe Price ID. null = plan bez ceny w Stripe (np. trial).
 export function stripePriceId(planId: string): string | null {
   const map: Record<string, string | undefined> = {
-    solo: process.env.STRIPE_PRICE_SOLO,
-    solo_plus: process.env.STRIPE_PRICE_SOLO_PLUS,
-    biznes: process.env.STRIPE_PRICE_BIZNES,
+    pro: process.env.STRIPE_PRICE_PRO,
   };
   return map[planId] ?? null;
 }

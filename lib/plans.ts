@@ -1,5 +1,7 @@
-// Definicje planów wg PLAN.md sekcja 4 (+ plan Biznes z nielimitowanymi SMS).
-export type PlanId = "trial" | "solo" | "solo_plus" | "biznes";
+// Definicje planów: darmowy trial + jeden płatny plan Pro.
+// Limity SMS pozostają wewnętrznym bezpiecznikiem (anty-nadużycia),
+// ale nie są komunikowane w cenniku.
+export type PlanId = "trial" | "pro";
 
 export interface Plan {
   id: PlanId;
@@ -28,47 +30,33 @@ export const PLANS: Record<PlanId, Plan> = {
     staffLimit: 1,
     tagline: "Przetestuj wszystko przez 14 dni",
   },
-  solo: {
-    id: "solo",
-    name: "Solo",
-    pricePlnMonth: 29,
-    smsLimit: 150,
-    secondReminder: false,
-    reactivation: false,
-    customSender: false,
-    staffLimit: 1,
-    tagline: "Dla jednoosobowej działalności",
-  },
-  solo_plus: {
-    id: "solo_plus",
-    name: "Solo+",
+  pro: {
+    id: "pro",
+    name: "Pro",
     pricePlnMonth: 49,
     smsLimit: 400,
     secondReminder: true,
     reactivation: true,
     customSender: true,
-    staffLimit: 3,
+    staffLimit: 10,
     highlight: true,
-    tagline: "Dla małego salonu (2–3 osoby)",
-  },
-  biznes: {
-    id: "biznes",
-    name: "Biznes",
-    pricePlnMonth: 99,
-    smsLimit: UNLIMITED,
-    secondReminder: true,
-    reactivation: true,
-    customSender: true,
-    staffLimit: 20,
-    tagline: "Nielimitowane SMS-y, bez martwienia się o pakiety",
+    tagline: "Wszystko, czego potrzebuje Twój salon",
   },
 };
 
-export const PLAN_ORDER: PlanId[] = ["trial", "solo", "solo_plus", "biznes"];
-export const PAID_PLANS: PlanId[] = ["solo", "solo_plus", "biznes"];
+export const PLAN_ORDER: PlanId[] = ["trial", "pro"];
+export const PAID_PLANS: PlanId[] = ["pro"];
+
+// Wycofane plany (konta sprzed zmiany cennika) — traktowane jak Pro.
+const LEGACY_PLANS: Record<string, PlanId> = {
+  solo: "pro",
+  solo_plus: "pro",
+  biznes: "pro",
+};
 
 export function getPlan(id: string): Plan {
-  return PLANS[(id as PlanId)] ?? PLANS.trial;
+  const mapped = LEGACY_PLANS[id] ?? (id as PlanId);
+  return PLANS[mapped] ?? PLANS.trial;
 }
 
 export function isUnlimited(plan: Plan): boolean {
@@ -86,9 +74,9 @@ export function smsLimitLabel(plan: Plan): string {
   return isUnlimited(plan) ? "bez limitu" : String(plan.smsLimit);
 }
 
-// Czy trial jest aktywny (albo plan płatny).
+// Czy trial jest aktywny (albo plan płatny — w tym wycofane plany legacy).
 export function subscriptionActive(plan: string, trialUntil: Date | null): boolean {
-  if (PAID_PLANS.includes(plan as PlanId)) return true;
+  if (getPlan(plan).pricePlnMonth > 0 && plan !== "trial") return true;
   if (plan === "trial" && trialUntil) return trialUntil.getTime() > Date.now();
   return false;
 }
