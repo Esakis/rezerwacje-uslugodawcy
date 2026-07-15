@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PLANS, PLAN_ORDER, smsLimitLabel, isUnlimited } from "@/lib/plans";
+import { InstallAppButton } from "./install-app";
 import {
   IconClock,
   IconChat,
@@ -17,7 +18,7 @@ export default function LandingPage() {
     <main className="min-h-screen bg-ink-50">
       {/* Nagłówek */}
       <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient text-sm font-bold text-white">
               B
@@ -40,7 +41,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-hero-glow">
-        <div className="mx-auto max-w-5xl px-6 pt-16 pb-20 text-center">
+        <div className="mx-auto max-w-5xl px-4 pt-10 pb-14 text-center sm:px-6 sm:pt-16 sm:pb-20">
           <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-medium text-brand-700 shadow-soft ring-1 ring-ink-100">
             <IconSparkle width={16} height={16} />
             Bez prowizji · 14 dni za darmo
@@ -62,12 +63,18 @@ export default function LandingPage() {
               Zobacz przykładową stronę rezerwacji
             </Link>
           </div>
-          <p className="mt-4 text-sm text-ink-500">Bez karty. Dostępne też jako aplikacja na telefon.</p>
+          <p className="mt-4 text-sm text-ink-500">
+            Bez karty.{" "}
+            <a href="#aplikacja" className="font-medium text-brand-600 underline">
+              Dostępne też jako aplikacja na telefon
+            </a>
+            .
+          </p>
         </div>
       </section>
 
       {/* Korzyści */}
-      <section className="mx-auto max-w-6xl px-6 pb-8">
+      <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <Feature Icon={IconClock} title="Rezerwacja w < 60 s" desc="Klient wybiera osobę, usługę i wolny termin z telefonu. Bez telefonów i DM-ów w trakcie pracy." />
           <Feature Icon={IconChat} title="Automatyczne SMS-y" desc="Potwierdzenie od razu, przypomnienie 24 h przed. Klient odwoła jednym klikiem zamiast nie przyjść." />
@@ -79,7 +86,7 @@ export default function LandingPage() {
       </section>
 
       {/* Cennik */}
-      <section id="cennik" className="mx-auto max-w-6xl px-6 py-16">
+      <section id="cennik" className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="mb-3 text-center">
           <h2 className="text-3xl font-bold tracking-tight">Prosty cennik</h2>
           <p className="mt-2 text-ink-600">Miesięczna subskrypcja. Zmień plan lub zrezygnuj w dowolnym momencie.</p>
@@ -138,9 +145,47 @@ export default function LandingPage() {
         </p>
       </section>
 
+      {/* Aplikacja na telefon */}
+      <section id="aplikacja" className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold tracking-tight">Pobierz aplikację na telefon</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-ink-600">
+            BookEasy zainstalujesz prosto z przeglądarki — bez sklepu, za darmo, w kilka sekund.
+            Działa na Androidzie i iPhonie, także offline.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <InstallAppButton />
+          </div>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="card">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <IconPhone width={22} height={22} />
+            </div>
+            <h3 className="mt-4 font-semibold text-ink-900">Android (Chrome)</h3>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink-600">
+              <li>Otwórz tę stronę w Chrome na telefonie.</li>
+              <li>Kliknij menu ⋮ w prawym górnym rogu.</li>
+              <li>Wybierz „Zainstaluj aplikację" (lub „Dodaj do ekranu głównego").</li>
+            </ol>
+          </div>
+          <div className="card">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <IconPhone width={22} height={22} />
+            </div>
+            <h3 className="mt-4 font-semibold text-ink-900">iPhone (Safari)</h3>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink-600">
+              <li>Otwórz tę stronę w Safari.</li>
+              <li>Kliknij przycisk udostępniania (kwadrat ze strzałką).</li>
+              <li>Wybierz „Do ekranu początkowego" i potwierdź.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="mx-auto max-w-6xl px-6 pb-20">
-        <div className="overflow-hidden rounded-3xl bg-brand-gradient px-8 py-14 text-center text-white shadow-glow">
+      <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 sm:pb-20">
+        <div className="overflow-hidden rounded-3xl bg-brand-gradient px-5 py-10 text-center text-white shadow-glow sm:px-8 sm:py-14">
           <h2 className="text-3xl font-bold tracking-tight">Zacznij przyjmować rezerwacje jeszcze dziś</h2>
           <p className="mx-auto mt-3 max-w-xl text-white/85">
             Konfiguracja zajmuje kilka minut. 14 dni za darmo, bez podawania karty.
