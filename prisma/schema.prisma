@@ -34,6 +34,12 @@ model Provider {
   secondReminder Boolean @default(false) // drugie przypomnienie 2h przed (solo_plus+)
   reactivationWeeks Int  @default(0) // SMS „wróć do nas" po X tygodniach od ostatniej wizyty; 0 = wyłączone (solo_plus+)
 
+  // Bramka SMS z telefonu usługodawcy (aplikacja SMS Gate, sms-gate.app).
+  // Oba pola ustawione = SMS-y idą najpierw z telefonu (za darmo, poza limitem planu),
+  // z fallbackiem na globalną bramkę.
+  phoneGwLogin    String?
+  phoneGwPassword String?
+
   // Google Calendar — podłączany osobno w ustawieniach (osobna zgoda niż logowanie Google)
   gcalRefreshToken String?
   gcalEmail        String? // konto Google, z którym połączono kalendarz

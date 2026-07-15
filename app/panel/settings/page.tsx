@@ -4,6 +4,7 @@ import { getPlan, isUnlimited, smsLimitLabel } from "@/lib/plans";
 import { stripeEnabled } from "@/lib/stripe";
 import { bookingUrl } from "@/lib/tokens";
 import { disconnectGcal, openBillingPortal } from "./actions";
+import { PhoneGatewayForm } from "./phone-gateway-form";
 import { PlanPicker } from "./plan-picker";
 import { ProfileForm } from "./profile-form";
 
@@ -48,6 +49,19 @@ export default async function SettingsPage({
             />
           </div>
         )}
+      </div>
+
+      {/* SMS z telefonu usługodawcy */}
+      <div className="card">
+        <h2 className="mb-2 text-lg font-semibold">SMS z Twojego telefonu</h2>
+        <p className="mb-3 text-sm text-slate-500">
+          Podepnij swój telefon z Androidem, a potwierdzenia i przypomnienia będą wysyłane
+          z Twojego numeru — bez zużywania limitu SMS w planie.
+        </p>
+        <PhoneGatewayForm
+          connected={Boolean(provider.phoneGwLogin && provider.phoneGwPassword)}
+          login={provider.phoneGwLogin}
+        />
       </div>
 
       {/* Google Calendar */}

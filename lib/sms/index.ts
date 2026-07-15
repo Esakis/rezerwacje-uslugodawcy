@@ -4,6 +4,7 @@ import { getPlan, smsAvailable } from "../plans";
 import { fmtDateHuman, fmtTime } from "../time";
 import { bookingUrl, cancelUrl } from "../tokens";
 import { MockSmsProvider } from "./mock";
+import { PhoneGatewayProvider } from "./phone";
 import type { SmsProvider } from "./provider";
 import { SmsApiProvider } from "./smsapi";
 
@@ -59,6 +60,30 @@ export async function sendSms(params: {
 
   provider = await ensurePeriod(provider);
   const plan = getPlan(provider.plan);
+
+  // Telefon usługodawcy (SMS Gate): za darmo, poza limitem planu i licznikiem.
+  // Gdy zlecenie się nie powiedzie (złe dane / chmura niedostępna) — fallback
+  // na globalną bramkę poniżej, już na zwykłych zasadach limitu.
+  if (provider.phoneGwLogin && provider.phoneGwPassword) {
+    const phoneGw = new PhoneGatewayProvider(provider.phoneGwLogin, provider.phoneGwPassword);
+    const phoneResult = await phoneGw.send({ to: params.to, body: params.body });
+    if (phoneResult.ok) {
+      await prisma.smsLog.create({
+        data: {
+          providerId: provider.id,
+          appointmentId: params.appointmentId,
+          type: params.type,
+          phone: params.to,
+          body: params.body,
+          status: "sent",
+          costGrosze: 0,
+        },
+      });
+      return { ok: true, status: "sent" };
+    }
+    // eslint-disable-next-line no-console
+    console.warn(`[SMS] Bramka telefonu zawiodła (${phoneResult.error}) — fallback na globalną.`);
+  }
 
   // Limit SMS wg planu (plan Biznes = bez limitu).
   if (!smsAvailable(plan, provider.smsUsed)) {

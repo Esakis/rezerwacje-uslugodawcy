@@ -8,6 +8,7 @@ import { appUrl } from "@/lib/google";
 import { getPlan, PLAN_ORDER, type PlanId } from "@/lib/plans";
 import { getStripe, stripeEnabled, stripePriceId } from "@/lib/stripe";
 import { slugify } from "@/lib/slug";
+import { PhoneGatewayProvider } from "@/lib/sms/phone";
 
 export type ActionResult = { ok: boolean; error?: string; message?: string };
 
@@ -117,6 +118,65 @@ export async function updateProfile(
 
   revalidatePath("/panel/settings");
   return { ok: true, message: "Zapisano ustawienia." };
+}
+
+// Zapis danych bramki „SMS z telefonu" (aplikacja SMS Gate na Androidzie usługodawcy).
+export async function updatePhoneGateway(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const provider = await requireProvider();
+  const login = String(formData.get("phoneGwLogin") || "").trim();
+  const password = String(formData.get("phoneGwPassword") || "").trim();
+
+  if (!login || !password) {
+    return { ok: false, error: "Podaj login i hasło z aplikacji SMS Gate." };
+  }
+
+  await prisma.provider.update({
+    where: { id: provider.id },
+    data: { phoneGwLogin: login, phoneGwPassword: password },
+  });
+  revalidatePath("/panel/settings");
+  return { ok: true, message: "Zapisano. Wyślij SMS testowy, żeby sprawdzić połączenie." };
+}
+
+// Rozłączenie bramki telefonu — SMS-y wracają w całości na globalną bramkę.
+export async function disconnectPhoneGateway(): Promise<void> {
+  const provider = await requireProvider();
+  await prisma.provider.update({
+    where: { id: provider.id },
+    data: { phoneGwLogin: null, phoneGwPassword: null },
+  });
+  revalidatePath("/panel/settings");
+}
+
+// SMS testowy przez telefon usługodawcy — na jego własny numer z profilu.
+export async function testPhoneGateway(
+  _prev: ActionResult,
+  _formData: FormData
+): Promise<ActionResult> {
+  const provider = await requireProvider();
+  if (!provider.phoneGwLogin || !provider.phoneGwPassword) {
+    return { ok: false, error: "Najpierw zapisz login i hasło." };
+  }
+  if (!provider.phone) {
+    return { ok: false, error: "Uzupełnij swój numer telefonu w ustawieniach profilu poniżej." };
+  }
+
+  const gw = new PhoneGatewayProvider(provider.phoneGwLogin, provider.phoneGwPassword);
+  const result = await gw.send({
+    to: provider.phone,
+    body: "BookEasy: test bramki SMS z Twojego telefonu. Działa!",
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: `Nie udało się: ${result.error ?? "nieznany błąd"}` };
+  }
+  return {
+    ok: true,
+    message: "Zlecenie przyjęte — SMS powinien za chwilę przyjść na Twój numer.",
+  };
 }
 
 // Odłączenie Google Calendar. Usuwa tylko token po naszej stronie —
