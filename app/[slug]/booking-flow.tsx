@@ -252,7 +252,7 @@ export function BookingFlow({
                 <button
                   key={ds}
                   onClick={() => setDate(ds)}
-                  className={`flex min-w-[66px] flex-col items-center rounded-xl border px-2 py-2.5 text-sm transition ${
+                  className={`flex min-w-[72px] shrink-0 flex-col items-center rounded-xl border px-2 py-2.5 text-sm transition ${
                     date === ds ? "pick-active" : "pick-idle"
                   }`}
                 >
@@ -270,7 +270,7 @@ export function BookingFlow({
               ) : slots.length === 0 ? (
                 <p className="text-sm text-ink-400">Brak wolnych terminów w tym dniu. Wybierz inny.</p>
               ) : (
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
                   {slots.map((s) => (
                     <button
                       key={s.start}

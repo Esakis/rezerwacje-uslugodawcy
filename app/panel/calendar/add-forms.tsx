@@ -84,7 +84,7 @@ export function AddForms({
               </select>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="label">Data</label>
               <input name="date" type="date" defaultValue={defaultDate} className="input" required />

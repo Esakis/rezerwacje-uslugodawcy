@@ -4,7 +4,7 @@ import { getCurrentProvider } from "@/lib/auth";
 import { getPlan, subscriptionActive, smsLimitLabel, isUnlimited } from "@/lib/plans";
 import { bookingUrl } from "@/lib/tokens";
 import { logoutAction } from "./actions";
-import { PanelNav } from "./nav";
+import { PanelNav, PanelMobileNav } from "./nav";
 import { IconArrowRight } from "@/app/icons";
 
 export default async function PanelLayout({
@@ -55,6 +55,7 @@ export default async function PanelLayout({
             <form action={logoutAction}>
               <button className="text-sm text-ink-500 hover:text-ink-900">Wyloguj</button>
             </form>
+            <PanelMobileNav />
             {provider.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={provider.avatarUrl} alt="" className="h-8 w-8 rounded-full ring-1 ring-ink-200" />

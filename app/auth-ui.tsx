@@ -23,7 +23,7 @@ export function AuthShell({
   errorCode?: string;
 }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-hero-glow px-6 py-10">
+    <main className="relative flex min-h-screen items-center justify-center bg-hero-glow px-4 py-8 sm:px-6 sm:py-10">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-6 flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gradient text-base font-bold text-white">

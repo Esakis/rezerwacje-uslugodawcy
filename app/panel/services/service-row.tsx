@@ -31,7 +31,7 @@ export function ServiceRow({
         <button
           onClick={() => startTransition(() => toggleService(id))}
           disabled={pending}
-          className="btn-secondary px-2 py-1 text-xs"
+          className="btn-secondary px-3 py-2 text-xs sm:px-2 sm:py-1"
         >
           {active ? "Ukryj" : "Pokaż"}
         </button>
@@ -40,7 +40,7 @@ export function ServiceRow({
             if (confirm("Usunąć usługę?")) startTransition(() => deleteService(id));
           }}
           disabled={pending}
-          className="text-xs text-slate-400 hover:text-red-600"
+          className="px-2 py-2 text-xs text-slate-400 hover:text-red-600 sm:py-1"
         >
           Usuń
         </button>

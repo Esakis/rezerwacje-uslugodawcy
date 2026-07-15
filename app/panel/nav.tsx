@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   IconGrid,
@@ -11,6 +12,8 @@ import {
   IconUser,
   IconChart,
   IconSettings,
+  IconMenu,
+  IconX,
 } from "@/app/icons";
 
 const LINKS = [
@@ -24,14 +27,18 @@ const LINKS = [
   { href: "/panel/settings", label: "Plan", Icon: IconSettings },
 ];
 
+function isActive(pathname: string, href: string): boolean {
+  return href === "/panel" ? pathname === "/panel" : pathname.startsWith(href);
+}
+
 export function PanelNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mx-auto max-w-6xl px-2 sm:px-4">
+    <nav className="mx-auto hidden max-w-6xl px-2 sm:block sm:px-4">
       <ul className="scroll-x flex gap-1 overflow-x-auto">
         {LINKS.map(({ href, label, Icon }) => {
-          const active = href === "/panel" ? pathname === "/panel" : pathname.startsWith(href);
+          const active = isActive(pathname, href);
           return (
             <li key={href}>
               <Link
@@ -50,5 +57,54 @@ export function PanelNav() {
         })}
       </ul>
     </nav>
+  );
+}
+
+// Hamburger dla telefonów — przycisk w nagłówku + rozwijana lista pod nim.
+export function PanelMobileNav() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  // Zamknij menu po przejściu na inną stronę.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <div className="sm:hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Zamknij menu" : "Otwórz menu"}
+        aria-expanded={open}
+        className="relative z-30 flex h-10 w-10 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100"
+      >
+        {open ? <IconX width={22} height={22} /> : <IconMenu width={22} height={22} />}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10 bg-ink-900/20" onClick={() => setOpen(false)} />
+          <nav className="absolute inset-x-0 top-full z-20 border-b border-ink-100 bg-white shadow-lg">
+            <ul className="py-1">
+              {LINKS.map(({ href, label, Icon }) => {
+                const active = isActive(pathname, href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium ${
+                        active ? "bg-brand-50 text-brand-700" : "text-ink-600 hover:bg-ink-50"
+                      }`}
+                    >
+                      <Icon width={18} height={18} />
+                      {label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </>
+      )}
+    </div>
   );
 }
