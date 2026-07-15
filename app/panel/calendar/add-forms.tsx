@@ -29,6 +29,7 @@ export function AddForms({
   defaultDate: string;
 }) {
   const [tab, setTab] = useState<"appt" | "block">("appt");
+  const [repeatWeeks, setRepeatWeeks] = useState("0");
   const [apptState, apptAction, apptPending] = useActionState(addManualAppointment, initial);
   const [blockState, blockAction, blockPending] = useActionState(addBlock, initial);
 
@@ -94,6 +95,41 @@ export function AddForms({
               <input name="time" type="time" className="input" required />
             </div>
           </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label">Powtarzaj</label>
+              <select
+                name="repeatWeeks"
+                value={repeatWeeks}
+                onChange={(e) => setRepeatWeeks(e.target.value)}
+                className="input"
+              >
+                <option value="0">Nie powtarzaj</option>
+                <option value="1">Co tydzień</option>
+                <option value="2">Co 2 tygodnie</option>
+                <option value="3">Co 3 tygodnie</option>
+                <option value="4">Co 4 tygodnie</option>
+              </select>
+            </div>
+            {repeatWeeks !== "0" && (
+              <div>
+                <label className="label">Liczba wizyt w serii</label>
+                <select name="repeatCount" defaultValue="4" className="input">
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {repeatWeeks !== "0" && (
+            <p className="text-xs text-slate-400 sm:col-span-2">
+              Terminy kolidujące z innymi wizytami zostaną pominięte. SMS potwierdzający
+              wyślemy tylko do pierwszej wizyty — przypomnienia przyjdą przed każdą.
+            </p>
+          )}
           <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
             <input type="checkbox" name="sendConfirm" defaultChecked className="rounded" />
             Wyślij SMS potwierdzający klientowi
