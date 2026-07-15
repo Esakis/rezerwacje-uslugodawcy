@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { isSlotFree } from "@/lib/slots";
 import { addMinutes } from "@/lib/time";
 import { normalizePhone } from "@/lib/format";
-import { sendSms, confirmBody } from "@/lib/sms";
+import { sendSms, confirmBody, ownerNewBookingBody } from "@/lib/sms";
 import { syncAppointmentToGcal } from "@/lib/gcal";
 
 const schema = z.object({
@@ -47,7 +47,7 @@ export async function POST(
   // Jeśli usługodawca ma aktywnych pracowników, wybór osoby jest wymagany.
   const activeStaff = await prisma.staffMember.findMany({
     where: { providerId: provider.id, active: true },
-    select: { id: true },
+    select: { id: true, name: true },
   });
   let chosenStaffId: string | null = null;
   if (activeStaff.length > 0) {
@@ -56,6 +56,7 @@ export async function POST(
     }
     chosenStaffId = staffId;
   }
+  const chosenStaffName = activeStaff.find((s) => s.id === chosenStaffId)?.name ?? null;
 
   const startAt = new Date(start);
   if (isNaN(startAt.getTime()) || startAt.getTime() <= Date.now()) {
@@ -93,8 +94,8 @@ export async function POST(
     },
   });
 
-  // SMS potwierdzający i wydarzenie w Google Calendar (best-effort) — niezależne
-  // efekty uboczne, uruchamiane równolegle, żeby nie sumować opóźnień.
+  // SMS potwierdzający, powiadomienie usługodawcy i wydarzenie w Google Calendar
+  // (best-effort) — niezależne efekty uboczne, uruchamiane równolegle.
   const [sms] = await Promise.all([
     sendSms({
       providerId: provider.id,
@@ -103,6 +104,23 @@ export async function POST(
       to: phone,
       body: confirmBody(provider.name, service.name, appt),
     }),
+    // Powiadomienie właściciela: systemowe (poza limitem planu), o ile ma numer.
+    provider.phone
+      ? sendSms({
+          providerId: provider.id,
+          appointmentId: appt.id,
+          type: "owner_new",
+          to: provider.phone,
+          body: ownerNewBookingBody({
+            serviceName: service.name,
+            clientName: name,
+            clientPhone: phone,
+            startAt,
+            staffName: chosenStaffName,
+          }),
+          system: true,
+        })
+      : Promise.resolve(null),
     syncAppointmentToGcal(appt.id),
   ]);
   if (sms.ok) {

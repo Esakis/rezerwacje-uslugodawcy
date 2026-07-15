@@ -8,7 +8,14 @@ import { PhoneGatewayProvider } from "./phone";
 import type { SmsProvider } from "./provider";
 import { SmsApiProvider } from "./smsapi";
 
-export type SmsType = "confirm" | "reminder24" | "reminder2" | "cancel" | "login" | "reactivation";
+export type SmsType =
+  | "confirm"
+  | "reminder24"
+  | "reminder2"
+  | "cancel"
+  | "login"
+  | "reactivation"
+  | "owner_new";
 
 function getProvider(): SmsProvider {
   const kind = process.env.SMS_PROVIDER || "mock";
@@ -48,12 +55,15 @@ interface SendResult {
 }
 
 // Główna funkcja wysyłki: sprawdza limit planu, wysyła, loguje do sms_log, aktualizuje licznik.
+// system=true: powiadomienie wewnętrzne (np. do usługodawcy) — poza limitem planu
+// i licznikiem, ale nadal logowane i z priorytetem bramki telefonu.
 export async function sendSms(params: {
   providerId: string;
   appointmentId?: string;
   type: SmsType;
   to: string;
   body: string;
+  system?: boolean;
 }): Promise<SendResult> {
   let provider = await prisma.provider.findUnique({ where: { id: params.providerId } });
   if (!provider) return { ok: false, status: "failed", error: "Brak usługodawcy" };
@@ -85,8 +95,8 @@ export async function sendSms(params: {
     console.warn(`[SMS] Bramka telefonu zawiodła (${phoneResult.error}) — fallback na globalną.`);
   }
 
-  // Limit SMS wg planu (plan Biznes = bez limitu).
-  if (!smsAvailable(plan, provider.smsUsed)) {
+  // Limit SMS wg planu (nie dotyczy powiadomień systemowych).
+  if (!params.system && !smsAvailable(plan, provider.smsUsed)) {
     await prisma.smsLog.create({
       data: {
         providerId: provider.id,
@@ -120,7 +130,7 @@ export async function sendSms(params: {
     },
   });
 
-  if (result.ok) {
+  if (result.ok && !params.system) {
     await prisma.provider.update({
       where: { id: provider.id },
       data: { smsUsed: { increment: 1 } },
@@ -191,6 +201,22 @@ export function cancelBody(providerName: string, appt: ApptForSms): string {
   return `${providerName}: Twoja wizyta ${fmtDateHuman(appt.startAt)} o ${fmtTime(
     appt.startAt
   )} została odwołana.`;
+}
+
+// Powiadomienie usługodawcy o nowej rezerwacji online (na jego numer z profilu).
+export function ownerNewBookingBody(params: {
+  serviceName: string;
+  clientName: string;
+  clientPhone: string;
+  startAt: Date;
+  staffName?: string | null;
+}): string {
+  return (
+    `Nowa rezerwacja online!\n` +
+    `${params.serviceName}, ${fmtDateHuman(params.startAt)} o ${fmtTime(params.startAt)}` +
+    (params.staffName ? ` (do: ${params.staffName})` : "") +
+    `\n${params.clientName}, tel. ${params.clientPhone}`
+  );
 }
 
 // SMS „wróć do nas" — reaktywacja klienta po dłuższej przerwie (PLAN.md sekcja 8 pkt 5).
