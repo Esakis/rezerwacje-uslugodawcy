@@ -3,16 +3,15 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { isSlotFree } from "@/lib/slots";
 import { addMinutes } from "@/lib/time";
-import { normalizePhone } from "@/lib/format";
 import { sendSms, confirmBody, ownerNewBookingBody } from "@/lib/sms";
 import { syncAppointmentToGcal } from "@/lib/gcal";
+import { getClientIdentity } from "@/lib/client-auth";
 
 const schema = z.object({
   serviceId: z.string().min(1),
   staffId: z.string().min(1).optional(),
   start: z.string().datetime(), // ISO UTC
   name: z.string().min(2).max(80),
-  phone: z.string().min(6).max(20),
 });
 
 // POST /api/public/<slug>/book — rezerwacja przez klienta (source=online).
@@ -27,9 +26,24 @@ export async function POST(
     return NextResponse.json({ error: "Nieprawidłowe dane." }, { status: 400 });
   }
   const { serviceId, start, name, staffId } = parsed.data;
-  const phone = normalizePhone(parsed.data.phone);
+
+  // Rezerwacja wymaga zalogowanego klienta (kod SMS albo konto e-mail).
+  const identity = await getClientIdentity();
+  if (!identity) {
+    return NextResponse.json(
+      { error: "Zaloguj się, aby zarezerwować wizytę." },
+      { status: 401 }
+    );
+  }
+
+  // Numer telefonu musi być zweryfikowany kodem SMS (konta e-mail bez numeru
+  // przechodzą weryfikację w formularzu rezerwacji).
+  const phone = identity.phone;
   if (!phone) {
-    return NextResponse.json({ error: "Nieprawidłowy numer telefonu." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Zweryfikuj numer telefonu, aby zarezerwować wizytę." },
+      { status: 403 }
+    );
   }
 
   const provider = await prisma.provider.findUnique({ where: { slug } });
@@ -73,11 +87,11 @@ export async function POST(
     );
   }
 
-  // Deduplikacja klienta po numerze.
+  // Deduplikacja klienta po numerze; e-mail z sesji dopisujemy do kartoteki.
   const client = await prisma.client.upsert({
     where: { providerId_phone: { providerId: provider.id, phone } },
-    update: { name },
-    create: { providerId: provider.id, name, phone },
+    update: { name, ...(identity.email ? { email: identity.email } : {}) },
+    create: { providerId: provider.id, name, phone, email: identity.email },
   });
 
   const appt = await prisma.appointment.create({

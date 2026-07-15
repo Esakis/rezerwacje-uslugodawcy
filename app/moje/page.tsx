@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { getClientPhone } from "@/lib/client-auth";
+import { getClientIdentity, clientMatch } from "@/lib/client-auth";
 import { fmtDateHuman, fmtTime, warsawWeekday, weekdayNamePl } from "@/lib/time";
 import { fmtPrice } from "@/lib/format";
 import { AuthShell } from "../auth-ui";
@@ -29,14 +29,14 @@ function daysUntilLabel(d: Date, now: Date): string {
 }
 
 export default async function ClientPanelPage() {
-  const phone = await getClientPhone();
+  const identity = await getClientIdentity();
 
-  // Niezalogowany → logowanie kodem SMS.
-  if (!phone) {
+  // Niezalogowany → logowanie jednorazowym kodem (SMS lub e-mail).
+  if (!identity) {
     return (
       <AuthShell
         title="Panel klienta"
-        subtitle="Zobacz i zarządzaj swoimi wizytami — zaloguj się numerem telefonu."
+        subtitle="Zobacz i zarządzaj swoimi wizytami — zaloguj się numerem telefonu lub e-mailem."
         footer={
           <Link href="/" className="font-medium text-brand-600 hover:underline">
             ← Wróć na stronę główną
@@ -50,7 +50,7 @@ export default async function ClientPanelPage() {
 
   const now = new Date();
   const appts = await prisma.appointment.findMany({
-    where: { client: { phone }, status: { in: ["booked", "done", "no_show", "cancelled"] } },
+    where: { client: clientMatch(identity), status: { in: ["booked", "done", "no_show", "cancelled"] } },
     include: { service: true, staff: true, provider: { select: { name: true, slug: true } } },
     orderBy: { startAt: "desc" },
     take: 100,
@@ -77,9 +77,14 @@ export default async function ClientPanelPage() {
             </span>
             <span className="text-lg font-bold tracking-tight">Moje wizyty</span>
           </div>
-          <form action={logoutClient}>
-            <button className="text-sm text-ink-500 hover:text-ink-900">Wyloguj</button>
-          </form>
+          <div className="flex items-center gap-3">
+            <Link href="/szukaj" className="text-sm font-medium text-brand-600 hover:underline">
+              Znajdź usługę
+            </Link>
+            <form action={logoutClient}>
+              <button className="text-sm text-ink-500 hover:text-ink-900">Wyloguj</button>
+            </form>
+          </div>
         </div>
       </header>
 

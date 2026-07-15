@@ -10,6 +10,12 @@ export function normalizePhone(input: string): string | null {
   return null;
 }
 
+// Normalizacja e-maila (konto klienta). null jeśli to nie e-mail.
+export function normalizeEmail(input: string): string | null {
+  const e = input.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
+}
+
 // Grosze -> "80,00 zł"
 export function fmtPrice(grosze: number): string {
   const zl = (grosze / 100).toFixed(2).replace(".", ",");

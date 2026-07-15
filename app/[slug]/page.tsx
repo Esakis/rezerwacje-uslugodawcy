@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { parseWorkingHours } from "@/lib/workingHours";
 import { fmtDate } from "@/lib/time";
+import { getClientIdentity, clientMatch } from "@/lib/client-auth";
 import { BookingFlow } from "./booking-flow";
 
 export default async function PublicBookingPage({
@@ -20,6 +21,16 @@ export default async function PublicBookingPage({
   });
 
   if (!provider) notFound();
+
+  // Zalogowany klient (kod SMS lub e-mail) — rezerwacja bez ponownego logowania.
+  const identity = await getClientIdentity();
+  const knownClient = identity
+    ? await prisma.client.findFirst({
+        where: clientMatch(identity),
+        orderBy: { createdAt: "desc" },
+        select: { name: true, phone: true },
+      })
+    : null;
 
   const wh = parseWorkingHours(provider.workingHours);
   const openWeekdays = Object.entries(wh)
@@ -42,6 +53,11 @@ export default async function PublicBookingPage({
             {initials}
           </div>
           <h1 className="mt-4 text-2xl font-bold text-white">{provider.name}</h1>
+          {(provider.address || provider.city) && (
+            <p className="mt-1 text-sm text-white/90">
+              📍 {[provider.address, provider.city].filter(Boolean).join(", ")}
+            </p>
+          )}
           <p className="mt-1 text-sm text-white/80">Zarezerwuj wizytę online — zajmie mniej niż minutę</p>
         </div>
       </div>
@@ -68,6 +84,10 @@ export default async function PublicBookingPage({
             }))}
             openWeekdays={openWeekdays}
             todayDate={fmtDate(new Date())}
+            clientPhone={identity?.phone ?? null}
+            clientEmail={identity?.email ?? null}
+            clientName={knownClient?.name ?? ""}
+            suggestedPhone={knownClient?.phone ?? ""}
           />
         )}
 

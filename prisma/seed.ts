@@ -20,8 +20,34 @@ async function main() {
 
   const trialUntil = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  // Usuń istniejącego demo (idempotentny seed).
-  await prisma.provider.deleteMany({ where: { email } });
+  // Usuń istniejących demo (idempotentny seed).
+  await prisma.provider.deleteMany({ where: { email: { in: [email, "demo-barber@bookeasy.pl"] } } });
+
+  // Drugi usługodawca — żeby wyszukiwarka (/szukaj) miała co pokazać na mapie.
+  await prisma.provider.create({
+    data: {
+      email: "demo-barber@bookeasy.pl",
+      passwordHash,
+      slug: "barber-bros",
+      name: "Barber Bros",
+      phone: "+48600300400",
+      category: "barber",
+      city: "Kraków",
+      address: "Floriańska 12",
+      lat: 50.0641,
+      lng: 19.9414,
+      workingHours,
+      plan: "solo_plus",
+      trialUntil,
+      services: {
+        create: [
+          { name: "Strzyżenie męskie", durationMin: 30, priceGrosze: 7000, sortOrder: 1 },
+          { name: "Strzyżenie + broda", durationMin: 50, priceGrosze: 11000, sortOrder: 2 },
+          { name: "Trymowanie brody", durationMin: 20, priceGrosze: 5000, sortOrder: 3 },
+        ],
+      },
+    },
+  });
 
   const provider = await prisma.provider.create({
     data: {
@@ -30,6 +56,11 @@ async function main() {
       slug: "studio-anna",
       name: "Studio Urody Anna",
       phone: "+48600100200",
+      category: "kosmetyka",
+      city: "Warszawa",
+      address: "Złota 44",
+      lat: 52.2306,
+      lng: 21.0022,
       workingHours,
       bufferMin: 10,
       slotStepMin: 15,
@@ -54,12 +85,23 @@ async function main() {
     include: { services: true, staff: true },
   });
 
+  // Konto klienckie (logowanie e-mail + hasło) z już zweryfikowanym numerem.
+  await prisma.clientAccount.deleteMany({ where: { email: "kasia@example.com" } });
+  await prisma.clientAccount.create({
+    data: {
+      email: "kasia@example.com",
+      passwordHash: await bcrypt.hash("kasia1234", 10),
+      phone: "+48500600700",
+    },
+  });
+
   // Przykładowa klientka + jedna wizyta jutro.
   const client = await prisma.client.create({
     data: {
       providerId: provider.id,
       name: "Kasia Nowak",
       phone: "+48500600700",
+      email: "kasia@example.com",
       notes: "Alergia na aceton.",
     },
   });
@@ -104,7 +146,9 @@ async function main() {
   console.log("✅ Seed gotowy.");
   console.log("   Logowanie panelu:  demo@bookeasy.pl / demo1234");
   console.log("   Strona rezerwacji: http://localhost:3000/studio-anna");
-  console.log("   Panel klienta:     http://localhost:3000/moje  (numer: 500600700)");
+  console.log("   Panel klienta:     http://localhost:3000/moje");
+  console.log("     — kodem SMS:     numer 500600700 (kod w konsoli)");
+  console.log("     — e-mail+hasło:  kasia@example.com / kasia1234");
 }
 
 main()

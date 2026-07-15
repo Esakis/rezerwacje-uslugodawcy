@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { changePlan } from "./actions";
-import { PLANS, PLAN_ORDER } from "@/lib/plans";
+import { PLANS, PLAN_ORDER, UNLIMITED } from "@/lib/plans";
 
 export function PlanPicker({ current }: { current: string }) {
   const [pending, startTransition] = useTransition();
@@ -25,7 +25,13 @@ export function PlanPicker({ current }: { current: string }) {
               <span className="text-sm font-normal text-ink-400">{id === "trial" ? "" : "/mies."}</span>
             </div>
             <ul className="mt-2 space-y-1 text-xs text-ink-500">
-              <li>{p.staffLimit === 1 ? "1 osoba" : `do ${p.staffLimit} osób`}</li>
+              <li>
+                {p.staffLimit === 1
+                  ? "1 osoba"
+                  : p.staffLimit === UNLIMITED
+                    ? "Zespół bez limitu osób"
+                    : `do ${p.staffLimit} osób`}
+              </li>
               <li>Automatyczne potwierdzenia i przypomnienia</li>
               {p.secondReminder && <li>Drugie przypomnienie 2h</li>}
               {p.reactivation && <li>Automatyczna reaktywacja klientów</li>}

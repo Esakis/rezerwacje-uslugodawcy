@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fmtDuration, fmtPrice } from "@/lib/format";
 import { IconCheck } from "@/app/icons";
+import { requestBookingCode, verifyBookingCode, bookingEmailAuth } from "./actions";
 
 interface ServiceOpt {
   id: string;
@@ -67,6 +68,10 @@ export function BookingFlow({
   staff,
   openWeekdays,
   todayDate,
+  clientPhone,
+  clientEmail,
+  clientName,
+  suggestedPhone,
 }: {
   slug: string;
   providerName: string;
@@ -74,6 +79,10 @@ export function BookingFlow({
   staff: StaffOpt[];
   openWeekdays: number[];
   todayDate: string;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  clientName: string;
+  suggestedPhone: string;
 }) {
   const hasStaff = staff.length > 0;
   const [person, setPerson] = useState<StaffOpt | null>(hasStaff && staff.length === 1 ? staff[0] : null);
@@ -82,11 +91,83 @@ export function BookingFlow({
   const [slots, setSlots] = useState<SlotOpt[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slot, setSlot] = useState<SlotOpt | null>(null);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(clientName);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ cancelToken: string; smsSent: boolean } | null>(null);
+
+  // Logowanie wymagane dopiero przy potwierdzeniu: kod SMS albo konto e-mail+hasło.
+  // Rezerwacja zawsze wymaga zweryfikowanego numeru telefonu — konto e-mailowe
+  // bez numeru przechodzi weryfikację SMS w tym samym kroku.
+  const [loggedPhone, setLoggedPhone] = useState<string | null>(clientPhone);
+  const [loggedEmail, setLoggedEmail] = useState<string | null>(clientEmail);
+  const [authMethod, setAuthMethod] = useState<"phone" | "email">("phone");
+  const [loginStep, setLoginStep] = useState<"phone" | "code">("phone");
+  const [loginPhone, setLoginPhone] = useState(suggestedPhone);
+  const [loginCode, setLoginCode] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authIntent, setAuthIntent] = useState<"login" | "register">("login");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginPending, setLoginPending] = useState(false);
+
+  const isLogged = Boolean(loggedPhone || loggedEmail);
+
+  async function sendLoginCode() {
+    setLoginPending(true);
+    setLoginError(null);
+    try {
+      const res = await requestBookingCode(loginPhone);
+      if (!res.ok) {
+        setLoginError(res.error ?? "Nie udało się wysłać kodu.");
+      } else {
+        setLoginPhone(res.phone ?? loginPhone);
+        setLoginStep("code");
+        setLoginCode("");
+      }
+    } catch {
+      setLoginError("Błąd połączenia. Spróbuj ponownie.");
+    } finally {
+      setLoginPending(false);
+    }
+  }
+
+  async function confirmLoginCode() {
+    setLoginPending(true);
+    setLoginError(null);
+    try {
+      const res = await verifyBookingCode(loginPhone, loginCode);
+      if (!res.ok) {
+        setLoginError(res.error ?? "Nieprawidłowy kod.");
+      } else {
+        setLoggedPhone(res.phone ?? null);
+        if (res.email) setLoggedEmail(res.email);
+      }
+    } catch {
+      setLoginError("Błąd połączenia. Spróbuj ponownie.");
+    } finally {
+      setLoginPending(false);
+    }
+  }
+
+  async function emailAuth() {
+    setLoginPending(true);
+    setLoginError(null);
+    try {
+      const res = await bookingEmailAuth(authEmail, authPassword, authIntent);
+      if (!res.ok) {
+        setLoginError(res.error ?? "Nie udało się zalogować.");
+      } else {
+        setLoggedEmail(res.email ?? null);
+        setLoggedPhone(res.phone ?? null);
+        setLoginStep("phone");
+      }
+    } catch {
+      setLoginError("Błąd połączenia. Spróbuj ponownie.");
+    } finally {
+      setLoginPending(false);
+    }
+  }
 
   // Numeracja kroków przesuwa się, gdy jest wybór osoby.
   const nPerson = 1;
@@ -129,12 +210,22 @@ export function BookingFlow({
           staffId: person?.id,
           start: slot.start,
           name,
-          phone,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Nie udało się zarezerwować.");
+        // Sesja wygasła w trakcie — wracamy do logowania.
+        if (res.status === 401) {
+          setLoggedPhone(null);
+          setLoggedEmail(null);
+          setLoginStep("phone");
+        }
+        // Numer niezweryfikowany — pokazujemy krok weryfikacji SMS.
+        if (res.status === 403) {
+          setLoggedPhone(null);
+          setLoginStep("phone");
+        }
         if (res.status === 409 && date) {
           const q = new URLSearchParams({ serviceId: service.id, date });
           if (person) q.set("staffId", person.id);
@@ -151,6 +242,72 @@ export function BookingFlow({
       setSubmitting(false);
     }
   }
+
+  // Wspólny blok: podanie numeru + kod SMS. Używany i do logowania telefonem,
+  // i do weryfikacji numeru klienta zalogowanego e-mailem.
+  const phoneVerifyBlock =
+    loginStep === "phone" ? (
+      <>
+        <div>
+          <label className="label">Numer telefonu (przyjdzie na niego kod SMS)</label>
+          <input
+            className="input"
+            value={loginPhone}
+            onChange={(e) => setLoginPhone(e.target.value)}
+            placeholder="500 600 700"
+            inputMode="tel"
+          />
+          <p className="mt-1.5 text-xs text-ink-400">
+            {isLogged
+              ? "Na ten numer wyślemy potwierdzenie i przypomnienia SMS — potwierdź go jednorazowym kodem."
+              : "Wyślemy jednorazowy kod SMS. Bez hasła."}
+          </p>
+        </div>
+        {loginError && <p className="text-sm text-red-600">{loginError}</p>}
+        <button
+          onClick={sendLoginCode}
+          disabled={loginPending || loginPhone.trim().length < 6}
+          className="btn-primary w-full py-3"
+        >
+          {loginPending ? "Wysyłam…" : "Wyślij kod SMS"}
+        </button>
+      </>
+    ) : (
+      <>
+        <div>
+          <label className="label">Kod z SMS (wysłany na {loginPhone})</label>
+          <input
+            className="input text-center text-lg tracking-[0.4em]"
+            value={loginCode}
+            onChange={(e) => setLoginCode(e.target.value)}
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="______"
+            autoFocus
+          />
+        </div>
+        {loginError && <p className="text-sm text-red-600">{loginError}</p>}
+        <button
+          onClick={confirmLoginCode}
+          disabled={loginPending || loginCode.trim().length !== 6}
+          className="btn-primary w-full py-3"
+        >
+          {loginPending ? "Sprawdzam…" : isLogged ? "Zweryfikuj numer" : "Zaloguj się"}
+        </button>
+        <div className="flex justify-between text-sm">
+          <button onClick={() => setLoginStep("phone")} className="text-ink-500 hover:text-ink-900">
+            ← Zmień numer
+          </button>
+          <button
+            onClick={sendLoginCode}
+            disabled={loginPending}
+            className="font-medium text-brand-600 hover:underline"
+          >
+            Wyślij kod ponownie
+          </button>
+        </div>
+      </>
+    );
 
   // Ekran potwierdzenia.
   if (done) {
@@ -291,31 +448,20 @@ export function BookingFlow({
         </div>
       )}
 
-      {/* Krok: dane */}
+      {/* Krok: dane / logowanie */}
       {service && slot && (
         <div className="card animate-fade-up">
-          <StepHead n={nData} title="Twoje dane" />
+          <StepHead
+            n={nData}
+            title={
+              !isLogged
+                ? "Zaloguj się, aby zarezerwować"
+                : !loggedPhone
+                  ? "Potwierdź numer telefonu"
+                  : "Twoje dane"
+            }
+          />
           <div className="space-y-3">
-            <div>
-              <label className="label">Imię i nazwisko</label>
-              <input
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jan Kowalski"
-              />
-            </div>
-            <div>
-              <label className="label">Telefon (na niego przyjdzie SMS)</label>
-              <input
-                className="input"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="500 600 700"
-                inputMode="tel"
-              />
-            </div>
-
             <div className="rounded-xl bg-ink-50 p-3.5 text-sm text-ink-600 ring-1 ring-ink-100">
               <strong className="text-ink-900">{service.name}</strong> · {providerName}
               {person && <> · {person.name}</>}
@@ -323,15 +469,120 @@ export function BookingFlow({
               {date && dateLabel(date).day}, godz. {slot.label} · {fmtPrice(service.priceGrosze)}
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {!isLogged ? (
+              <>
+                {/* Wybór metody: jednorazowy kod SMS albo konto e-mail + hasło. */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMethod("phone");
+                      setLoginError(null);
+                    }}
+                    className={`pick py-2 text-sm font-medium ${
+                      authMethod === "phone" ? "pick-active" : "pick-idle"
+                    }`}
+                  >
+                    Kod SMS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMethod("email");
+                      setLoginError(null);
+                    }}
+                    className={`pick py-2 text-sm font-medium ${
+                      authMethod === "email" ? "pick-active" : "pick-idle"
+                    }`}
+                  >
+                    E-mail i hasło
+                  </button>
+                </div>
 
-            <button
-              onClick={submit}
-              disabled={submitting || name.trim().length < 2 || phone.trim().length < 6}
-              className="btn-primary w-full py-3"
-            >
-              {submitting ? "Rezerwuję…" : "Potwierdź rezerwację"}
-            </button>
+                {authMethod === "phone" ? (
+                  phoneVerifyBlock
+                ) : (
+                  <>
+                    <div>
+                      <label className="label">E-mail</label>
+                      <input
+                        className="input"
+                        type="email"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="jan@przyklad.pl"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Hasło</label>
+                      <input
+                        className="input"
+                        type="password"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder={authIntent === "register" ? "min. 8 znaków" : "••••••••"}
+                      />
+                    </div>
+                    {loginError && <p className="text-sm text-red-600">{loginError}</p>}
+                    <button
+                      onClick={emailAuth}
+                      disabled={loginPending || !authEmail.includes("@") || authPassword.length < 1}
+                      className="btn-primary w-full py-3"
+                    >
+                      {loginPending
+                        ? "Chwila…"
+                        : authIntent === "register"
+                          ? "Zarejestruj się"
+                          : "Zaloguj się"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAuthIntent(authIntent === "login" ? "register" : "login")}
+                      className="btn-ghost w-full"
+                    >
+                      {authIntent === "login"
+                        ? "Nie masz konta? Zarejestruj się"
+                        : "Masz już konto? Zaloguj się"}
+                    </button>
+                  </>
+                )}
+              </>
+            ) : !loggedPhone ? (
+              <>
+                {/* Konto e-mailowe bez zweryfikowanego numeru — weryfikacja SMS. */}
+                <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-700 ring-1 ring-emerald-100">
+                  <span>Zalogowano: {loggedEmail}</span>
+                  <IconCheck width={16} height={16} strokeWidth={2.5} />
+                </div>
+                {phoneVerifyBlock}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-700 ring-1 ring-emerald-100">
+                  <span>Zalogowano: {loggedEmail ?? loggedPhone}</span>
+                  <IconCheck width={16} height={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <label className="label">Imię i nazwisko</label>
+                  <input
+                    className="input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Jan Kowalski"
+                  />
+                </div>
+
+                {error && <p className="text-sm text-red-600">{error}</p>}
+
+                <button
+                  onClick={submit}
+                  disabled={submitting || name.trim().length < 2}
+                  className="btn-primary w-full py-3"
+                >
+                  {submitting ? "Rezerwuję…" : "Potwierdź rezerwację"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { CATEGORIES } from "@/lib/categories";
 import { updateProfile, type ActionResult } from "./actions";
 
 const initial: ActionResult = { ok: false };
@@ -9,6 +10,9 @@ export function ProfileForm({
   name,
   phone,
   slug,
+  category,
+  city,
+  address,
   smsSenderName,
   secondReminder,
   reactivationWeeks,
@@ -20,6 +24,9 @@ export function ProfileForm({
   name: string;
   phone: string | null;
   slug: string;
+  category: string | null;
+  city: string | null;
+  address: string | null;
   smsSenderName: string | null;
   secondReminder: boolean;
   reactivationWeeks: number;
@@ -50,6 +57,31 @@ export function ProfileForm({
           <input name="slug" defaultValue={slug} className="input" />
         </div>
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="label">Kategoria usług</label>
+          <select name="category" defaultValue={category ?? ""} className="input">
+            <option value="">— wybierz —</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Miasto</label>
+          <input name="city" defaultValue={city ?? ""} className="input" placeholder="np. Warszawa" />
+        </div>
+        <div>
+          <label className="label">Ulica i numer</label>
+          <input name="address" defaultValue={address ?? ""} className="input" placeholder="np. Długa 12" />
+        </div>
+      </div>
+      <p className="-mt-2 text-xs text-slate-400">
+        Kategoria i adres sprawiają, że klienci znajdą Cię w wyszukiwarce usług i na mapie.
+      </p>
 
       <div>
         <label className="label">

@@ -20,6 +20,13 @@ model Provider {
   slug          String   @unique // adres publiczny: /twoja-nazwa
   name          String
   phone         String?
+  // Profil publiczny — wyszukiwarka usług (/szukaj)
+  category      String?  // id kategorii z lib/categories.ts (np. "fryzjer", "kosmetyka")
+  city          String?
+  address       String?  // ulica i numer
+  lat           Float?   // współrzędne z geokodowania adresu (Nominatim/OSM)
+  lng           Float?
+
   // Godziny pracy jako JSON: { "1": [{"from":"09:00","to":"17:00"}], ... } klucz = dzień tygodnia 0-6 (0=niedziela)
   workingHours  String   @default("{}")
   bufferMin     Int      @default(0) // bufor między wizytami (min)
@@ -97,6 +104,7 @@ model Client {
   provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   name       String
   phone      String   // identyfikator klienta u danego usługodawcy
+  email      String?  // alternatywny kanał logowania klienta (kod na e-mail)
   notes      String?
   reactivationSentAt DateTime? // kiedy wysłano ostatni SMS „wróć do nas" (żeby nie powtarzać)
   createdAt  DateTime @default(now())
@@ -105,6 +113,7 @@ model Client {
 
   @@unique([providerId, phone]) // deduplikacja po numerze
   @@index([providerId])
+  @@index([email])
 }
 
 model Appointment {
@@ -170,14 +179,26 @@ model SmsLog {
   @@index([providerId, sentAt])
 }
 
-// Kod jednorazowy do logowania klienta w panelu klienta (przez SMS).
-model LoginCode {
-  id        String   @id @default(cuid())
-  phone     String   // znormalizowany numer (E.164)
-  codeHash  String   // hash 6-cyfrowego kodu
-  expiresAt DateTime
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
+// Konto klienta końcowego (logowanie e-mail + hasło).
+// Telefon uzupełniany po weryfikacji kodem SMS — wymagany do rezerwacji.
+model ClientAccount {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  phone        String?  // zweryfikowany numer (kod SMS)
+  createdAt    DateTime @default(now())
 
   @@index([phone])
+}
+
+// Kod jednorazowy do weryfikacji numeru telefonu klienta (SMS).
+model LoginCode {
+  id         String   @id @default(cuid())
+  identifier String   // znormalizowany numer telefonu (E.164)
+  codeHash   String   // hash 6-cyfrowego kodu
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([identifier])
 }

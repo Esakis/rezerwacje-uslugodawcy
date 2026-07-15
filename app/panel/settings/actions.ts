@@ -9,6 +9,8 @@ import { getPlan, PLAN_ORDER, type PlanId } from "@/lib/plans";
 import { getStripe, stripeEnabled, stripePriceId } from "@/lib/stripe";
 import { slugify } from "@/lib/slug";
 import { PhoneGatewayProvider } from "@/lib/sms/phone";
+import { isCategoryId } from "@/lib/categories";
+import { geocodeAddress } from "@/lib/geocode";
 
 export type ActionResult = { ok: boolean; error?: string; message?: string };
 
@@ -87,6 +89,10 @@ export async function updateProfile(
   const smsSenderName = String(formData.get("smsSenderName") || "").trim() || null;
   const secondReminder = formData.get("secondReminder") === "on";
   const reactivationWeeks = Number(formData.get("reactivationWeeks") || 0);
+  const categoryRaw = String(formData.get("category") || "").trim();
+  const category = categoryRaw && isCategoryId(categoryRaw) ? categoryRaw : null;
+  const city = String(formData.get("city") || "").trim() || null;
+  const address = String(formData.get("address") || "").trim() || null;
 
   if (!name) return { ok: false, error: "Podaj nazwę." };
 
@@ -99,6 +105,26 @@ export async function updateProfile(
   });
   if (clash) return { ok: false, error: "Ten adres jest już zajęty. Wybierz inny." };
 
+  // Geokodowanie adresu (Nominatim) tylko gdy adres/miasto się zmieniły.
+  let lat = provider.lat;
+  let lng = provider.lng;
+  let geoWarning: string | null = null;
+  if (!address || !city) {
+    lat = null;
+    lng = null;
+  } else if (address !== provider.address || city !== provider.city) {
+    const geo = await geocodeAddress(address, city);
+    if (geo) {
+      lat = geo.lat;
+      lng = geo.lng;
+    } else {
+      lat = null;
+      lng = null;
+      geoWarning =
+        "Nie znaleźliśmy adresu na mapie — sprawdź pisownię (bez pinezki na mapie wyszukiwarki).";
+    }
+  }
+
   const plan = getPlan(provider.plan);
   await prisma.provider.update({
     where: { id: provider.id },
@@ -106,6 +132,11 @@ export async function updateProfile(
       name,
       phone,
       slug,
+      category,
+      city,
+      address,
+      lat,
+      lng,
       // Własna nazwa nadawcy tylko na planie z tą funkcją.
       smsSenderName: plan.customSender ? smsSenderName : null,
       // Drugie przypomnienie tylko jeśli plan pozwala.
@@ -117,7 +148,10 @@ export async function updateProfile(
   });
 
   revalidatePath("/panel/settings");
-  return { ok: true, message: "Zapisano ustawienia." };
+  return {
+    ok: true,
+    message: geoWarning ? `Zapisano ustawienia. ${geoWarning}` : "Zapisano ustawienia.",
+  };
 }
 
 // Zapis danych bramki „SMS z telefonu" (aplikacja SMS Gate na Androidzie usługodawcy).

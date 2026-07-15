@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getPlan } from "@/lib/plans";
+import { getPlan, staffLimitReached } from "@/lib/plans";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -19,7 +19,7 @@ export async function addStaff(
 
   const plan = getPlan(provider.plan);
   const count = await prisma.staffMember.count({ where: { providerId: provider.id } });
-  if (count >= plan.staffLimit) {
+  if (staffLimitReached(plan, count)) {
     return {
       ok: false,
       error: `Twój plan (${plan.name}) pozwala na ${plan.staffLimit} ${

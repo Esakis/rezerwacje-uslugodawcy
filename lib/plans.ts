@@ -11,7 +11,7 @@ export interface Plan {
   secondReminder: boolean;
   reactivation: boolean; // SMS „wróć do nas" po X tygodniach od ostatniej wizyty
   customSender: boolean;
-  staffLimit: number; // ilu pracowników („do kogo") dozwolonych
+  staffLimit: number; // ilu pracowników („do kogo") dozwolonych; -1 = bez limitu
   highlight?: boolean; // wyróżnienie w cenniku
   tagline: string;
 }
@@ -38,7 +38,7 @@ export const PLANS: Record<PlanId, Plan> = {
     secondReminder: true,
     reactivation: true,
     customSender: true,
-    staffLimit: 10,
+    staffLimit: UNLIMITED,
     highlight: true,
     tagline: "Wszystko, czego potrzebuje Twój salon",
   },
@@ -67,6 +67,11 @@ export function isUnlimited(plan: Plan): boolean {
 export function smsAvailable(plan: Plan, smsUsed: number): boolean {
   if (isUnlimited(plan)) return true;
   return smsUsed < plan.smsLimit;
+}
+
+// Czy można dodać kolejną osobę do zespołu.
+export function staffLimitReached(plan: Plan, count: number): boolean {
+  return plan.staffLimit !== UNLIMITED && count >= plan.staffLimit;
 }
 
 // Etykieta limitu SMS do UI.

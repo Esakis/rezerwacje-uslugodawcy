@@ -139,6 +139,9 @@ export default async function SettingsPage({
           name={provider.name}
           phone={provider.phone}
           slug={provider.slug}
+          category={provider.category}
+          city={provider.city}
+          address={provider.address}
           smsSenderName={provider.smsSenderName}
           secondReminder={provider.secondReminder}
           reactivationWeeks={provider.reactivationWeeks}

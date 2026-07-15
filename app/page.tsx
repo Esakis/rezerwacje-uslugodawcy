@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PLANS, PLAN_ORDER } from "@/lib/plans";
+import { PLANS, PLAN_ORDER, UNLIMITED } from "@/lib/plans";
 import { InstallAppButton } from "./install-app";
 import {
   IconClock,
@@ -26,6 +26,9 @@ export default function LandingPage() {
             <span className="text-xl font-bold tracking-tight">BookEasy</span>
           </div>
           <nav className="flex items-center gap-2 sm:gap-3">
+            <Link href="/szukaj" className="text-sm font-medium text-ink-600 hover:text-ink-900">
+              Znajdź usługę
+            </Link>
             <Link href="/moje" className="hidden text-sm font-medium text-ink-600 hover:text-ink-900 sm:inline">
               Panel klienta
             </Link>
@@ -116,7 +119,11 @@ export default function LandingPage() {
                 <ul className="mt-5 flex-1 space-y-2.5 text-sm text-ink-700">
                   <Li>Automatyczne potwierdzenia i przypomnienia</Li>
                   <Li>
-                    {p.staffLimit === 1 ? "1 osoba" : `do ${p.staffLimit} osób w zespole`}
+                    {p.staffLimit === 1
+                      ? "1 osoba"
+                      : p.staffLimit === UNLIMITED
+                        ? "Zespół bez limitu osób"
+                        : `do ${p.staffLimit} osób w zespole`}
                   </Li>
                   <Li>Publiczna strona rezerwacji</Li>
                   <Li>Kalendarz i baza klientów</Li>

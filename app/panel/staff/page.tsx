@@ -1,6 +1,6 @@
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getPlan } from "@/lib/plans";
+import { getPlan, UNLIMITED } from "@/lib/plans";
 import { AddStaff } from "./add-staff";
 import { StaffRow } from "./staff-row";
 
@@ -26,7 +26,9 @@ export default async function StaffPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Twój zespół</h2>
           <span className="badge bg-brand-50 text-brand-700">
-            {staff.length} / {plan.staffLimit} w planie {plan.name}
+            {plan.staffLimit === UNLIMITED
+              ? `${staff.length} osób · bez limitu (plan ${plan.name})`
+              : `${staff.length} / ${plan.staffLimit} w planie ${plan.name}`}
           </span>
         </div>
         {staff.length === 0 ? (
